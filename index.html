@@ -77,7 +77,7 @@
             <div id="speed-text">0 km/h</div>
         </div>
 
-        <!-- Button Controls (Hidden if Tilt is selected) -->
+        <!-- Button Controls -->
         <div id="steering-btns" class="hidden">
             <div id="btn-left" class="steer-btn">◀</div>
             <div id="btn-right" class="steer-btn">▶</div>
@@ -133,7 +133,6 @@
     let width, height;
 
     // --- Pre-render Realistic Bike Sprite ---
-    // Creates a highly detailed off-screen canvas to act as the 2D image sprite
     const bikeSprite = document.createElement('canvas');
     bikeSprite.width = 60;
     bikeSprite.height = 120;
@@ -165,11 +164,11 @@
     // Body Fairings (Sport Red)
     bctx.fillStyle = '#e74c3c';
     bctx.beginPath();
-    bctx.moveTo(30, 8); // Nose
-    bctx.lineTo(45, 45); // Right wide
-    bctx.lineTo(35, 80); // Right tail
-    bctx.lineTo(25, 80); // Left tail
-    bctx.lineTo(15, 45); // Left wide
+    bctx.moveTo(30, 8); 
+    bctx.lineTo(45, 45); 
+    bctx.lineTo(35, 80); 
+    bctx.lineTo(25, 80); 
+    bctx.lineTo(15, 45); 
     bctx.fill();
 
     // Carbon Fiber Accents (Dark Gray)
@@ -181,33 +180,29 @@
     bctx.fill();
 
     // Rider (Leather Suit & Racing Helmet)
-    // Shoulders
     bctx.fillStyle = '#1a1a1a';
     bctx.beginPath();
     bctx.roundRect(18, 50, 24, 30, 8);
     bctx.fill();
-    // Helmet Base
     bctx.fillStyle = '#c0392b';
     bctx.beginPath();
     bctx.arc(30, 55, 10, 0, Math.PI * 2);
     bctx.fill();
-    // Helmet Visor
     bctx.fillStyle = '#000';
     bctx.beginPath();
     bctx.arc(30, 53, 7, Math.PI, Math.PI * 2);
     bctx.fill();
-    // Arms holding handlebars
     bctx.strokeStyle = '#1a1a1a';
     bctx.lineWidth = 4;
     bctx.beginPath();
-    bctx.moveTo(20, 55); bctx.lineTo(15, 40); bctx.lineTo(25, 35); // Left arm
-    bctx.moveTo(40, 55); bctx.lineTo(45, 40); bctx.lineTo(35, 35); // Right arm
+    bctx.moveTo(20, 55); bctx.lineTo(15, 40); bctx.lineTo(25, 35); 
+    bctx.moveTo(40, 55); bctx.lineTo(45, 40); bctx.lineTo(35, 35); 
     bctx.stroke();
 
     // Dual Exhaust Pipes
     bctx.fillStyle = '#95a5a6';
-    bctx.fillRect(40, 80, 4, 25); // Right pipe
-    bctx.fillRect(16, 80, 4, 25); // Left pipe
+    bctx.fillRect(40, 80, 4, 25); 
+    bctx.fillRect(16, 80, 4, 25); 
 
     // Rear Tire
     bctx.fillStyle = '#111';
@@ -231,8 +226,8 @@
     const steeringBtns = document.getElementById('steering-btns');
     
     // --- Game State & Variables ---
-    let state = 'MENU'; // MENU, PLAYING, GAMEOVER
-    let controlMode = 'TILT'; // TILT or BUTTONS
+    let state = 'MENU'; 
+    let controlMode = 'TILT'; 
     let lastTime = 0;
     let shakeTime = 0;
     
@@ -240,11 +235,15 @@
     let highScore = localStorage.getItem('bikeHighScore') || 0;
     hiScoreEl.innerText = Math.floor(highScore);
     
-    let baseSpeed = 0;
-    let minBaseSpeed = 5;
-    let maxBaseSpeed = 22;
-    let speed = 0;
+    // Speed Mechanics (Realistic Momentum)
+    let minSpeed = 5;
+    let maxSpeed = 25; // 5 times minimum speed
+    let speed = minSpeed;
     let isAccelerating = false;
+    
+    // Takes 10 seconds to go from minSpeed (5) to maxSpeed (25). Difference is 20. (20 / 10s = 2 units/sec)
+    let accelRate = 2.0; 
+    let decelRate = 2.0; 
     
     const ROAD_WIDTH_RATIO = 0.6; 
     let roadLeft, roadWidth, laneWidth;
@@ -299,7 +298,7 @@
                 if (this.engineGain) this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
                 return;
             }
-            const speedRatio = currentSpeed / (maxBaseSpeed + 10);
+            const speedRatio = currentSpeed / (maxSpeed + 5);
             this.engineOsc.frequency.setTargetAtTime(50 + speedRatio * 150, this.ctx.currentTime, 0.1);
             this.engineGain.gain.setTargetAtTime(0.05 + speedRatio * 0.1, this.ctx.currentTime, 0.1);
         },
@@ -412,8 +411,7 @@
         
         state = 'PLAYING';
         score = 0;
-        baseSpeed = minBaseSpeed;
-        speed = 0;
+        speed = minSpeed;
         isAccelerating = false;
         bike.lane = 2;
         bike.lean = 0;
@@ -464,15 +462,32 @@
         const w = laneWidth * 0.7;
         const h = w * 1.8;
         
-        // Smart Traffic Algorithm: Ensure at least one lane is always open
-        const dangerZone = h * 3; 
-        const recentCars = obstacles.filter(c => c.y < dangerZone);
-        const blockedLanes = recentCars.map(c => c.lane);
+        // Find lanes where a car was JUST spawned (to prevent cars spawning inside each other visually)
+        let blockedLanes = [];
+        for (let i = 0; i < 5; i++) {
+            const laneCars = obstacles.filter(c => c.lane === i);
+            const lastCar = laneCars[laneCars.length - 1];
+            if (lastCar && lastCar.y < h * 1.5) {
+                blockedLanes.push(i);
+            }
+        }
         
+        // Smart Traffic: Look further ahead to ensure at least ONE lane is an open escape path
+        const dangerZone = h * 3.5;
+        const carsInDangerZone = obstacles.filter(c => c.y < dangerZone);
+        const dangerLanes = carsInDangerZone.map(c => c.lane);
+        const completelySafeLanes = [0, 1, 2, 3, 4].filter(l => !dangerLanes.includes(l));
+        
+        // If only 1 lane is open in the extended zone, DO NOT block it
+        if (completelySafeLanes.length === 1 && !blockedLanes.includes(completelySafeLanes[0])) {
+            blockedLanes.push(completelySafeLanes[0]);
+        }
+
+        // Available lanes to spawn right now
         let availableLanes = [0, 1, 2, 3, 4].filter(l => !blockedLanes.includes(l));
         
-        // If 4 lanes are already blocked, force an open gap to ensure playability
-        if (availableLanes.length <= 1) return;
+        // If there's nowhere to spawn safely right now, skip this frame
+        if (availableLanes.length === 0) return;
 
         // Choose a random available lane
         const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
@@ -508,20 +523,28 @@
     function update(dt) {
         if (state !== 'PLAYING') return;
 
-        baseSpeed = Math.min(maxBaseSpeed, baseSpeed + dt * 0.05); 
-        const targetSpeed = baseSpeed + (isAccelerating ? 12 : 0);
-        speed += (targetSpeed - speed) * 0.15; 
+        // Realistic Acceleration & Deceleration
+        if (isAccelerating) {
+            speed += accelRate * dt;
+            if (speed > maxSpeed) speed = maxSpeed;
+        } else {
+            speed -= decelRate * dt;
+            if (speed < minSpeed) speed = minSpeed;
+        }
 
         score += speed * dt * 2;
         scoreEl.innerText = Math.floor(score);
 
         const speedKmh = Math.floor(speed * 9);
         speedText.innerText = `${speedKmh} km/h`;
-        const angle = -130 + (speedKmh / 300) * 260; 
+        
+        // Scale speedometer UI angle based on new max speed (25 * 9 = 225)
+        const angle = -130 + (speedKmh / 230) * 260; 
         speedNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
         
         AudioSys.updateEngine(speed);
 
+        // Steering Logic
         bike.targetX = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
         const steerDiff = bike.targetX - bike.x;
         
@@ -533,9 +556,9 @@
         laneOffset += speed * 0.5;
         if (laneOffset > 40) laneOffset = 0;
 
-        // Increased spawn rate significantly (timer lowered from 20 to 8)
+        // Increased spawn rate (timer lowered to 3.5 to consistently yield 6-8 cars on screen)
         obstacleTimer += speed * dt;
-        if (obstacleTimer > 8) {
+        if (obstacleTimer > 3.5) {
             spawnObstacle();
             obstacleTimer = 0;
         }
@@ -546,6 +569,7 @@
             sceneryTimer = 0;
         }
 
+        // Update Entity Positions
         for (let i = obstacles.length - 1; i >= 0; i--) {
             let obs = obstacles[i];
             obs.y += speed * obs.speedModifier * dt * 50;
@@ -641,7 +665,7 @@
             ctx.fillRect(obs.x + 4, obs.y + obs.h*0.7, obs.w - 8, obs.h*0.15); 
         });
 
-        // Player Bike (Using Detailed Sprite)
+        // Player Bike 
         if (state !== 'GAMEOVER' || shakeTime % 4 < 2) { 
             ctx.save();
             ctx.translate(bike.x + bike.w/2, bike.y + bike.h/2);
@@ -650,20 +674,16 @@
             let bx = -bike.w/2;
             let by = -bike.h/2;
 
-            // Draw Pre-rendered Detailed Sprite
             ctx.drawImage(bikeSprite, bx, by, bike.w, bike.h);
             
-            // Draw Dynamic Exhaust Flames when Accelerating
             if (isAccelerating) {
                 const flameLength = 10 + Math.random() * 15;
                 ctx.fillStyle = '#f39c12';
-                // Right Flame
                 ctx.beginPath();
                 ctx.moveTo(bx + bike.w*0.75, by + bike.h);
                 ctx.lineTo(bx + bike.w*0.80, by + bike.h + flameLength);
                 ctx.lineTo(bx + bike.w*0.85, by + bike.h);
                 ctx.fill();
-                // Left Flame
                 ctx.beginPath();
                 ctx.moveTo(bx + bike.w*0.15, by + bike.h);
                 ctx.lineTo(bx + bike.w*0.20, by + bike.h + flameLength);
