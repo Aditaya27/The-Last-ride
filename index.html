@@ -13,17 +13,18 @@
         canvas { display: block; width: 100%; height: 100%; }
 
         /* UI Overlays */
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); transition: opacity 0.5s ease; z-index: 10; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); transition: opacity 0.5s ease; z-index: 20; }
         .hidden { opacity: 0; pointer-events: none !important; display: none !important; }
         
-        h1 { color: #f1c40f; font-size: 3rem; margin-bottom: 10px; text-transform: uppercase; text-align: center;}
-        h2 { color: #ecf0f1; font-size: 1.5rem; margin-bottom: 30px; }
+        h1 { color: #f1c40f; font-size: 3rem; margin-bottom: 5px; text-transform: uppercase; text-align: center;}
+        h2 { color: #ecf0f1; font-size: 1.2rem; margin-bottom: 25px; }
         .score-text { color: #fff; font-size: 1.2rem; margin: 5px 0; }
         
-        button.action-btn { background: #e74c3c; color: white; border: none; padding: 15px 40px; font-size: 1.5rem; font-weight: bold; border-radius: 30px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s; margin-top: 20px;}
+        button.action-btn { background: #e74c3c; color: white; border: none; padding: 15px 40px; font-size: 1.5rem; font-weight: bold; border-radius: 30px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s; margin-top: 15px; width: 260px;}
         button.action-btn:active { transform: scale(0.95); }
+        button.menu-btn { background: #34495e; }
 
-        .settings { margin-top: 30px; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 15px; }
+        .settings { margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 15px; }
         .toggle-row { display: flex; justify-content: space-between; align-items: center; width: 260px; margin: 15px 0; color: #fff; font-size: 1.2rem;}
         
         /* Switch Toggle */
@@ -34,7 +35,11 @@
         input:checked + .slider { background-color: #2ecc71; }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        .control-label-text { font-size: 0.9rem; font-weight: bold; color: #f1c40f; text-transform: uppercase; width: 80px; text-align: right; }
+        /* Volume Slider */
+        .vol-slider { -webkit-appearance: none; width: 120px; height: 8px; border-radius: 5px; background: #ccc; outline: none; }
+        .vol-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #f1c40f; cursor: pointer; }
+
+        .control-icon { display: flex; align-items: center; justify-content: center; width: 60px; height: 30px; color: #f1c40f; font-weight: bold; font-size: 1.5rem; letter-spacing: 5px;}
 
         /* HUD */
         #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
@@ -42,14 +47,15 @@
         #score-board .current { font-size: 2rem; font-weight: bold; color: #f1c40f; }
         #score-board .high { font-size: 1rem; color: #bdc3c7; }
 
-        /* Speedometer - Moved to Top Middle */
+        /* Pause Button */
+        #btn-pause { position: absolute; top: 20px; left: 20px; width: 45px; height: 45px; background: rgba(0,0,0,0.6); border: 2px solid #ecf0f1; border-radius: 50%; color: white; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; pointer-events: auto; cursor: pointer; text-shadow: 1px 1px 2px #000; box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 10;}
+        #btn-pause:active { transform: scale(0.9); }
+
+        /* Speedometer */
         #speedometer { position: absolute; top: 20px; left: calc(50% - 50px); width: 100px; height: 100px; background: rgba(0,0,0,0.6); border: 4px solid #34495e; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
         #speed-text { position: absolute; bottom: 15px; color: white; font-weight: bold; font-size: 0.9rem; }
         .needle { position: absolute; bottom: 50%; left: 50%; width: 4px; height: 40px; background: #e74c3c; transform-origin: bottom center; transform: translateX(-50%) rotate(-130deg); transition: transform 0.1s linear; border-radius: 2px; }
         .center-dot { position: absolute; width: 12px; height: 12px; background: #ecf0f1; border-radius: 50%; }
-
-        /* Mobile Controls Hint */
-        #controls-hint { position: absolute; top: 20px; left: 20px; color: rgba(255,255,255,0.8); text-align: left; font-size: 0.9rem; text-shadow: 1px 1px 3px #000; }
 
         /* Button Steering Overlay */
         #steering-btns { position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 6; }
@@ -62,10 +68,9 @@
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Heads Up Display -->
+    <!-- HUD -->
     <div id="hud" class="hidden">
-        <div id="controls-hint">Hold to Accelerate<br>Tilt to Steer</div>
-        
+        <div id="btn-pause">⏸</div>
         <div id="score-board">
             <div class="current" id="score">0</div>
             <div class="high">HI: <span id="hi-score">0</span></div>
@@ -77,7 +82,6 @@
             <div id="speed-text">0 km/h</div>
         </div>
 
-        <!-- Button Controls -->
         <div id="steering-btns" class="hidden">
             <div id="btn-left" class="steer-btn">◀</div>
             <div id="btn-right" class="steer-btn">▶</div>
@@ -87,33 +91,58 @@
     <!-- Main Menu -->
     <div id="menu-screen" class="overlay">
         <h1>Moto Rush</h1>
-        <h2>Infinite 5-Lane Racing</h2>
+        <h2>Endless Highway Vibe</h2>
         <button id="btn-play" class="action-btn">Tap to Play</button>
         
         <div class="settings">
             <div class="toggle-row">
                 <span>Controls</span>
-                <span id="control-label" class="control-label-text">TILT</span>
+                <div id="control-icon-main" class="control-icon">
+                    <!-- Default: Tilt SVG -->
+                    <svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" transform="rotate(-15 12 12)" stroke="#f1c40f" stroke-width="2" fill="none"/></svg>
+                </div>
                 <label class="switch">
-                    <input type="checkbox" id="controls-toggle" checked>
+                    <input type="checkbox" class="controls-toggle" checked>
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="toggle-row">
                 <span>SFX</span>
+                <input type="range" min="0" max="100" value="100" class="vol-slider sfx-slider">
+            </div>
+            <div class="toggle-row">
+                <span>Music</span>
+                <input type="range" min="0" max="100" value="100" class="vol-slider bgm-slider">
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-screen" class="overlay hidden">
+        <h1>PAUSED</h1>
+        <button id="btn-resume" class="action-btn" style="background:#2ecc71;">Resume</button>
+        
+        <div class="settings">
+            <div class="toggle-row">
+                <span>Controls</span>
+                <div id="control-icon-pause" class="control-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" transform="rotate(-15 12 12)" stroke="#f1c40f" stroke-width="2" fill="none"/></svg>
+                </div>
                 <label class="switch">
-                    <input type="checkbox" id="sfx-toggle" checked>
+                    <input type="checkbox" class="controls-toggle" checked>
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="toggle-row">
+                <span>SFX</span>
+                <input type="range" min="0" max="100" value="100" class="vol-slider sfx-slider">
+            </div>
+            <div class="toggle-row">
                 <span>Music</span>
-                <label class="switch">
-                    <input type="checkbox" id="bgm-toggle" checked>
-                    <span class="slider"></span>
-                </label>
+                <input type="range" min="0" max="100" value="100" class="vol-slider bgm-slider">
             </div>
         </div>
+        <button id="btn-menu-from-pause" class="action-btn menu-btn">Main Menu</button>
     </div>
 
     <!-- Game Over Screen -->
@@ -122,7 +151,7 @@
         <div class="score-text">Score: <span id="final-score" style="color:#f1c40f; font-weight:bold;">0</span></div>
         <div class="score-text">High Score: <span id="final-hi-score">0</span></div>
         <button id="btn-retry" class="action-btn">Retry</button>
-        <button id="btn-menu" class="action-btn" style="background:#34495e;">Main Menu</button>
+        <button id="btn-menu" class="action-btn menu-btn">Main Menu</button>
     </div>
 </div>
 
@@ -137,83 +166,34 @@
     bikeSprite.width = 60;
     bikeSprite.height = 120;
     const bctx = bikeSprite.getContext('2d');
-
     // Shadow
     bctx.fillStyle = 'rgba(0,0,0,0.5)';
-    bctx.beginPath();
-    bctx.ellipse(30, 60, 20, 55, 0, 0, Math.PI * 2);
-    bctx.fill();
-
-    // Front Tire
-    bctx.fillStyle = '#111';
-    bctx.fillRect(25, 2, 10, 25);
-    
-    // Front Axle & Forks
-    bctx.fillStyle = '#bdc3c7';
-    bctx.fillRect(22, 12, 3, 15);
-    bctx.fillRect(35, 12, 3, 15);
-
-    // Windshield (Tinted Cyan)
+    bctx.beginPath(); bctx.ellipse(30, 60, 20, 55, 0, 0, Math.PI * 2); bctx.fill();
+    // Wheels & Forks
+    bctx.fillStyle = '#111'; bctx.fillRect(25, 2, 10, 25);
+    bctx.fillStyle = '#bdc3c7'; bctx.fillRect(22, 12, 3, 15); bctx.fillRect(35, 12, 3, 15);
+    // Windshield
     bctx.fillStyle = 'rgba(0, 200, 255, 0.6)';
-    bctx.beginPath();
-    bctx.moveTo(30, 15);
-    bctx.lineTo(40, 35);
-    bctx.lineTo(20, 35);
-    bctx.fill();
-
-    // Body Fairings (Sport Red)
+    bctx.beginPath(); bctx.moveTo(30, 15); bctx.lineTo(40, 35); bctx.lineTo(20, 35); bctx.fill();
+    // Body
     bctx.fillStyle = '#e74c3c';
-    bctx.beginPath();
-    bctx.moveTo(30, 8); 
-    bctx.lineTo(45, 45); 
-    bctx.lineTo(35, 80); 
-    bctx.lineTo(25, 80); 
-    bctx.lineTo(15, 45); 
-    bctx.fill();
-
-    // Carbon Fiber Accents (Dark Gray)
+    bctx.beginPath(); bctx.moveTo(30, 8); bctx.lineTo(45, 45); bctx.lineTo(35, 80); bctx.lineTo(25, 80); bctx.lineTo(15, 45); bctx.fill();
     bctx.fillStyle = '#2c3e50';
-    bctx.beginPath();
-    bctx.moveTo(30, 25);
-    bctx.lineTo(38, 48);
-    bctx.lineTo(22, 48);
-    bctx.fill();
-
-    // Rider (Leather Suit & Racing Helmet)
-    bctx.fillStyle = '#1a1a1a';
-    bctx.beginPath();
-    bctx.roundRect(18, 50, 24, 30, 8);
-    bctx.fill();
-    bctx.fillStyle = '#c0392b';
-    bctx.beginPath();
-    bctx.arc(30, 55, 10, 0, Math.PI * 2);
-    bctx.fill();
-    bctx.fillStyle = '#000';
-    bctx.beginPath();
-    bctx.arc(30, 53, 7, Math.PI, Math.PI * 2);
-    bctx.fill();
-    bctx.strokeStyle = '#1a1a1a';
-    bctx.lineWidth = 4;
-    bctx.beginPath();
-    bctx.moveTo(20, 55); bctx.lineTo(15, 40); bctx.lineTo(25, 35); 
-    bctx.moveTo(40, 55); bctx.lineTo(45, 40); bctx.lineTo(35, 35); 
-    bctx.stroke();
-
-    // Dual Exhaust Pipes
-    bctx.fillStyle = '#95a5a6';
-    bctx.fillRect(40, 80, 4, 25); 
-    bctx.fillRect(16, 80, 4, 25); 
-
-    // Rear Tire
-    bctx.fillStyle = '#111';
-    bctx.fillRect(23, 95, 14, 23);
-
-    // Tail Light
-    bctx.fillStyle = '#ff0000';
-    bctx.fillRect(26, 95, 8, 4);
+    bctx.beginPath(); bctx.moveTo(30, 25); bctx.lineTo(38, 48); bctx.lineTo(22, 48); bctx.fill();
+    // Rider
+    bctx.fillStyle = '#1a1a1a'; bctx.beginPath(); bctx.roundRect(18, 50, 24, 30, 8); bctx.fill();
+    bctx.fillStyle = '#c0392b'; bctx.beginPath(); bctx.arc(30, 55, 10, 0, Math.PI * 2); bctx.fill();
+    bctx.fillStyle = '#000'; bctx.beginPath(); bctx.arc(30, 53, 7, Math.PI, Math.PI * 2); bctx.fill();
+    bctx.strokeStyle = '#1a1a1a'; bctx.lineWidth = 4;
+    bctx.beginPath(); bctx.moveTo(20, 55); bctx.lineTo(15, 40); bctx.lineTo(25, 35); bctx.moveTo(40, 55); bctx.lineTo(45, 40); bctx.lineTo(35, 35); bctx.stroke();
+    // Exhaust & Tail
+    bctx.fillStyle = '#95a5a6'; bctx.fillRect(40, 80, 4, 25); bctx.fillRect(16, 80, 4, 25); 
+    bctx.fillStyle = '#111'; bctx.fillRect(23, 95, 14, 23);
+    bctx.fillStyle = '#ff0000'; bctx.fillRect(26, 95, 8, 4);
 
     // --- UI Elements ---
     const menuScreen = document.getElementById('menu-screen');
+    const pauseScreen = document.getElementById('pause-screen');
     const gameOverScreen = document.getElementById('game-over-screen');
     const hud = document.getElementById('hud');
     const scoreEl = document.getElementById('score');
@@ -222,11 +202,20 @@
     const finalHiScoreEl = document.getElementById('final-hi-score');
     const speedNeedle = document.getElementById('speed-needle');
     const speedText = document.getElementById('speed-text');
-    const controlsHint = document.getElementById('controls-hint');
     const steeringBtns = document.getElementById('steering-btns');
     
+    // Toggles & Sliders
+    const sfxSliders = document.querySelectorAll('.sfx-slider');
+    const bgmSliders = document.querySelectorAll('.bgm-slider');
+    const controlToggles = document.querySelectorAll('.controls-toggle');
+    const iconMain = document.getElementById('control-icon-main');
+    const iconPause = document.getElementById('control-icon-pause');
+    
+    const svgTilt = `<svg width="28" height="28" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" transform="rotate(-15 12 12)" stroke="#f1c40f" stroke-width="2" fill="none"/></svg>`;
+    const svgArrows = `&lt; &gt;`;
+
     // --- Game State & Variables ---
-    let state = 'MENU'; 
+    let state = 'MENU'; // MENU, PLAYING, PAUSED, GAMEOVER
     let controlMode = 'TILT'; 
     let lastTime = 0;
     let shakeTime = 0;
@@ -235,34 +224,34 @@
     let highScore = localStorage.getItem('bikeHighScore') || 0;
     hiScoreEl.innerText = Math.floor(highScore);
     
-    // Speed Mechanics (Realistic Momentum)
     let minSpeed = 5;
-    let maxSpeed = 25; // 5 times minimum speed
+    let maxSpeed = 25; 
     let speed = minSpeed;
     let isAccelerating = false;
-    
-    // Takes 10 seconds to go from minSpeed (5) to maxSpeed (25). Difference is 20. (20 / 10s = 2 units/sec)
     let accelRate = 2.0; 
     let decelRate = 2.0; 
     
-    const ROAD_WIDTH_RATIO = 0.6; 
     let roadLeft, roadWidth, laneWidth;
+    const ROAD_WIDTH_RATIO = 0.6; 
     
     let bike = { lane: 2, x: 0, y: 0, w: 40, h: 80, targetX: 0, lean: 0 };
     let obstacles = [];
     let scenery = [];
     let laneOffset = 0;
     
-    let sfxEnabled = true;
-    let bgmEnabled = true;
+    // Audio Volumes
+    let sfxVol = 1.0;
+    let bgmVol = 1.0;
 
-    // --- Audio System ---
+    // --- Audio System (Synthwave Vibe) ---
     const AudioSys = {
-        ctx: null, engineOsc: null, engineGain: null, bgmOsc1: null, bgmOsc2: null, bgmGain: null,
+        ctx: null, engineOsc: null, engineGain: null,
+        bgmOsc1: null, bgmOsc2: null, bgmOsc3: null, bgmFilter: null, bgmGain: null, bgmLFO: null, bgmLFOGain: null,
         init() {
             if (!this.ctx) {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 
+                // Engine Sound
                 this.engineOsc = this.ctx.createOscillator();
                 this.engineOsc.type = 'sawtooth';
                 this.engineGain = this.ctx.createGain();
@@ -277,33 +266,79 @@
                 this.engineGain.connect(this.ctx.destination);
                 this.engineOsc.start();
                 
-                this.bgmOsc1 = this.ctx.createOscillator();
-                this.bgmOsc2 = this.ctx.createOscillator();
-                this.bgmGain = this.ctx.createGain();
-                this.bgmOsc1.type = 'triangle';
-                this.bgmOsc2.type = 'sine';
-                this.bgmOsc1.frequency.value = 110; 
-                this.bgmOsc2.frequency.value = 164.81; 
+                // Vibe BGM (Breathing Synth Pad)
+                this.bgmOsc1 = this.ctx.createOscillator(); this.bgmOsc1.type = 'sawtooth';
+                this.bgmOsc2 = this.ctx.createOscillator(); this.bgmOsc2.type = 'sawtooth';
+                this.bgmOsc3 = this.ctx.createOscillator(); this.bgmOsc3.type = 'sine'; // Sub-bass
                 
-                this.bgmOsc1.connect(this.bgmGain);
-                this.bgmOsc2.connect(this.bgmGain);
-                this.bgmGain.connect(this.ctx.destination);
+                this.bgmOsc1.frequency.value = 110; // A2
+                this.bgmOsc2.frequency.value = 164.81; // E3
+                this.bgmOsc2.detune.value = 12; // Chorus effect
+                this.bgmOsc3.frequency.value = 55; // A1
+                
+                this.bgmFilter = this.ctx.createBiquadFilter();
+                this.bgmFilter.type = 'lowpass';
+                this.bgmFilter.frequency.value = 300;
+                
+                // LFO for Filter breathing
+                this.bgmLFO = this.ctx.createOscillator();
+                this.bgmLFO.type = 'sine';
+                this.bgmLFO.frequency.value = 0.15; // Slow sweep
+                this.bgmLFOGain = this.ctx.createGain();
+                this.bgmLFOGain.gain.value = 500;
+                this.bgmLFO.connect(this.bgmLFOGain);
+                this.bgmLFOGain.connect(this.bgmFilter.frequency);
+                this.bgmLFO.start();
+
+                this.bgmGain = this.ctx.createGain();
                 this.bgmGain.gain.value = 0;
-                this.bgmOsc1.start();
-                this.bgmOsc2.start();
+
+                this.bgmOsc1.connect(this.bgmFilter);
+                this.bgmOsc2.connect(this.bgmFilter);
+                this.bgmOsc3.connect(this.bgmFilter);
+                this.bgmFilter.connect(this.bgmGain);
+                this.bgmGain.connect(this.ctx.destination);
+                
+                this.bgmOsc1.start(); this.bgmOsc2.start(); this.bgmOsc3.start();
             }
         },
+        updateVolumes() {
+            if (!this.ctx) return;
+            if (state === 'PLAYING') {
+                this.bgmGain.gain.setTargetAtTime(bgmVol * 0.15, this.ctx.currentTime, 0.5);
+            } else if (state === 'PAUSED') {
+                this.bgmGain.gain.setTargetAtTime(bgmVol * 0.05, this.ctx.currentTime, 0.5); // Duck BGM
+            } else {
+                this.bgmGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
+            }
+            this.updateEngine(speed);
+        },
         updateEngine(currentSpeed) {
-            if (!sfxEnabled || state !== 'PLAYING') {
-                if (this.engineGain) this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+            if (!this.ctx) return;
+            if (state !== 'PLAYING' || sfxVol === 0) {
+                this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
                 return;
             }
             const speedRatio = currentSpeed / (maxSpeed + 5);
             this.engineOsc.frequency.setTargetAtTime(50 + speedRatio * 150, this.ctx.currentTime, 0.1);
-            this.engineGain.gain.setTargetAtTime(0.05 + speedRatio * 0.1, this.ctx.currentTime, 0.1);
+            this.engineGain.gain.setTargetAtTime(sfxVol * (0.05 + speedRatio * 0.1), this.ctx.currentTime, 0.1);
+        },
+        playBlink() {
+            if (!this.ctx || sfxVol === 0 || state !== 'PLAYING') return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.05);
+            gain.gain.setValueAtTime(sfxVol * 0.1, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.05);
         },
         playCrash() {
-            if (!sfxEnabled || !this.ctx) return;
+            if (!this.ctx || sfxVol === 0) return;
             const bufferSize = this.ctx.sampleRate * 0.5;
             const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -317,21 +352,13 @@
             filter.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.5);
             
             const gain = this.ctx.createGain();
-            gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+            gain.gain.setValueAtTime(sfxVol * 0.5, this.ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
             
             noise.connect(filter);
             filter.connect(gain);
             gain.connect(this.ctx.destination);
             noise.start();
-        },
-        toggleBGM(play) {
-            if (!this.ctx) return;
-            if (play && bgmEnabled && state === 'PLAYING') {
-                this.bgmGain.gain.setTargetAtTime(0.08, this.ctx.currentTime, 0.5);
-            } else {
-                this.bgmGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
-            }
         }
     };
 
@@ -350,13 +377,28 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // --- Inputs & Controls ---
+    // --- Inputs & UI Listeners ---
+    function syncControls(mode) {
+        controlMode = mode;
+        controlToggles.forEach(t => t.checked = (mode === 'TILT'));
+        iconMain.innerHTML = mode === 'TILT' ? svgTilt : svgArrows;
+        iconPause.innerHTML = mode === 'TILT' ? svgTilt : svgArrows;
+        if(state === 'PLAYING' || state === 'PAUSED') {
+            if(mode === 'BUTTONS') steeringBtns.classList.remove('hidden');
+            else steeringBtns.classList.add('hidden');
+        }
+    }
+    controlToggles.forEach(t => t.addEventListener('change', e => syncControls(e.target.checked ? 'TILT' : 'BUTTONS')));
+
+    function syncSFX(val) { sfxVol = val / 100; sfxSliders.forEach(s => s.value = val); AudioSys.updateVolumes(); }
+    function syncBGM(val) { bgmVol = val / 100; bgmSliders.forEach(s => s.value = val); AudioSys.updateVolumes(); }
+    sfxSliders.forEach(s => s.addEventListener('input', e => syncSFX(e.target.value)));
+    bgmSliders.forEach(s => s.addEventListener('input', e => syncBGM(e.target.value)));
+
     function requestPermissionsAndStart() {
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission().then(permissionState => {
-                if (permissionState === 'granted') {
-                    window.addEventListener('deviceorientation', handleOrientation);
-                }
+                if (permissionState === 'granted') window.addEventListener('deviceorientation', handleOrientation);
                 startGame();
             }).catch(console.error);
         } else {
@@ -368,40 +410,37 @@
     function handleOrientation(e) {
         if (state !== 'PLAYING' || controlMode !== 'TILT') return;
         let tilt = e.gamma || 0;
-        if (tilt < -30) tilt = -30;
-        if (tilt > 30) tilt = 30;
-
-        if (tilt < -15) bike.lane = 0;
-        else if (tilt < -5) bike.lane = 1;
-        else if (tilt < 5) bike.lane = 2;
-        else if (tilt < 15) bike.lane = 3;
-        else bike.lane = 4;
+        if (tilt < -30) tilt = -30; if (tilt > 30) tilt = 30;
+        if (tilt < -15) bike.lane = 0; else if (tilt < -5) bike.lane = 1; else if (tilt < 5) bike.lane = 2; else if (tilt < 15) bike.lane = 3; else bike.lane = 4;
     }
 
-    const btnLeft = document.getElementById('btn-left');
-    const btnRight = document.getElementById('btn-right');
+    const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right');
     function moveLeft(e) { e.preventDefault(); e.stopPropagation(); if (state === 'PLAYING') bike.lane = Math.max(0, bike.lane - 1); }
     function moveRight(e) { e.preventDefault(); e.stopPropagation(); if (state === 'PLAYING') bike.lane = Math.min(4, bike.lane + 1); }
-    btnLeft.addEventListener('touchstart', moveLeft, {passive: false});
-    btnLeft.addEventListener('mousedown', moveLeft);
-    btnRight.addEventListener('touchstart', moveRight, {passive: false});
-    btnRight.addEventListener('mousedown', moveRight);
+    btnLeft.addEventListener('touchstart', moveLeft, {passive: false}); btnLeft.addEventListener('mousedown', moveLeft);
+    btnRight.addEventListener('touchstart', moveRight, {passive: false}); btnRight.addEventListener('mousedown', moveRight);
 
     const handleStart = (e) => { if(e.target === canvas) { isAccelerating = true; e.preventDefault(); }};
     const handleEnd = (e) => { if(e.target === canvas) { isAccelerating = false; e.preventDefault(); }};
-    window.addEventListener('touchstart', handleStart, {passive: false});
-    window.addEventListener('touchend', handleEnd, {passive: false});
-    window.addEventListener('mousedown', handleStart);
-    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchstart', handleStart, {passive: false}); window.addEventListener('touchend', handleEnd, {passive: false});
+    window.addEventListener('mousedown', handleStart); window.addEventListener('mouseup', handleEnd);
 
-    document.getElementById('controls-toggle').addEventListener('change', (e) => {
-        controlMode = e.target.checked ? 'TILT' : 'BUTTONS';
-        document.getElementById('control-label').innerText = controlMode;
+    // Pause functionality
+    document.getElementById('btn-pause').addEventListener('click', () => {
+        if (state === 'PLAYING') {
+            state = 'PAUSED';
+            pauseScreen.classList.remove('hidden');
+            hud.classList.add('hidden');
+            AudioSys.updateVolumes();
+        }
     });
-    document.getElementById('sfx-toggle').addEventListener('change', (e) => sfxEnabled = e.target.checked);
-    document.getElementById('bgm-toggle').addEventListener('change', (e) => {
-        bgmEnabled = e.target.checked;
-        AudioSys.toggleBGM(bgmEnabled);
+    document.getElementById('btn-resume').addEventListener('click', () => {
+        state = 'PLAYING';
+        lastTime = performance.now(); // reset timer to prevent skip
+        pauseScreen.classList.add('hidden');
+        hud.classList.remove('hidden');
+        AudioSys.updateVolumes();
+        requestAnimationFrame(gameLoop);
     });
 
     // --- Core Game Functions ---
@@ -413,27 +452,17 @@
         score = 0;
         speed = minSpeed;
         isAccelerating = false;
-        bike.lane = 2;
-        bike.lean = 0;
+        bike.lane = 2; bike.lean = 0;
         bike.x = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
         
-        obstacles = [];
-        scenery = [];
+        obstacles = []; scenery = [];
         lastTime = performance.now();
         
-        menuScreen.classList.add('hidden');
-        gameOverScreen.classList.add('hidden');
+        menuScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden');
         hud.classList.remove('hidden');
-
-        if (controlMode === 'BUTTONS') {
-            steeringBtns.classList.remove('hidden');
-            controlsHint.innerHTML = "Tap Arrows to Steer<br>Hold Screen to Accelerate";
-        } else {
-            steeringBtns.classList.add('hidden');
-            controlsHint.innerHTML = "Tilt Phone to Steer<br>Hold Screen to Accelerate";
-        }
+        syncControls(controlMode); // Show/Hide buttons
+        AudioSys.updateVolumes();
         
-        AudioSys.toggleBGM(true);
         requestAnimationFrame(gameLoop);
     }
 
@@ -441,147 +470,148 @@
         state = 'GAMEOVER';
         shakeTime = 30;
         AudioSys.playCrash();
-        AudioSys.updateEngine(0);
-        AudioSys.toggleBGM(false);
+        AudioSys.updateVolumes(); // Will mute engine/bgm
 
-        if (score > highScore) {
-            highScore = score;
-            localStorage.setItem('bikeHighScore', highScore);
-        }
+        if (score > highScore) { highScore = score; localStorage.setItem('bikeHighScore', highScore); }
 
-        hud.classList.add('hidden');
-        steeringBtns.classList.add('hidden');
+        hud.classList.add('hidden'); steeringBtns.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
-        finalScoreEl.innerText = Math.floor(score);
-        finalHiScoreEl.innerText = Math.floor(highScore);
-        hiScoreEl.innerText = Math.floor(highScore);
+        finalScoreEl.innerText = Math.floor(score); finalHiScoreEl.innerText = Math.floor(highScore); hiScoreEl.innerText = Math.floor(highScore);
     }
 
-    // --- Entity Spawning ---
-    function spawnObstacle() {
-        const w = laneWidth * 0.7;
-        const h = w * 1.8;
-        
-        // Find lanes where a car was JUST spawned (to prevent cars spawning inside each other visually)
-        let blockedLanes = [];
-        for (let i = 0; i < 5; i++) {
-            const laneCars = obstacles.filter(c => c.lane === i);
-            const lastCar = laneCars[laneCars.length - 1];
-            if (lastCar && lastCar.y < h * 1.5) {
-                blockedLanes.push(i);
+    function goToMenu() {
+        state = 'MENU';
+        pauseScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden');
+        menuScreen.classList.remove('hidden');
+        ctx.fillStyle = '#2c3e50'; ctx.fillRect(0,0,width,height);
+        AudioSys.updateVolumes();
+    }
+
+    // --- Entity Spawning & Logic ---
+    function isLaneSafe(lane, yToCheck, safeDist) {
+        for (let c of obstacles) {
+            // Check cars that are in the lane, OR are currently switching into the lane
+            if (c.lane === lane || (c.switchState && c.targetLane === lane)) {
+                if (Math.abs(c.y - yToCheck) < safeDist) return false;
             }
         }
-        
-        // Smart Traffic: Look further ahead to ensure at least ONE lane is an open escape path
-        const dangerZone = h * 3.5;
-        const carsInDangerZone = obstacles.filter(c => c.y < dangerZone);
-        const dangerLanes = carsInDangerZone.map(c => c.lane);
-        const completelySafeLanes = [0, 1, 2, 3, 4].filter(l => !dangerLanes.includes(l));
-        
-        // If only 1 lane is open in the extended zone, DO NOT block it
-        if (completelySafeLanes.length === 1 && !blockedLanes.includes(completelySafeLanes[0])) {
-            blockedLanes.push(completelySafeLanes[0]);
-        }
+        return true;
+    }
 
-        // Available lanes to spawn right now
-        let availableLanes = [0, 1, 2, 3, 4].filter(l => !blockedLanes.includes(l));
+    function spawnObstacle() {
+        const w = laneWidth * 0.7; const h = w * 1.8;
+        let blockedLanes = [];
+        for (let i = 0; i < 5; i++) {
+            if (!isLaneSafe(i, -h, h * 1.5)) blockedLanes.push(i);
+        }
         
-        // If there's nowhere to spawn safely right now, skip this frame
+        // Smart traffic gap check
+        const dangerZone = h * 3.5;
+        let safeLanesExt = [0,1,2,3,4].filter(l => isLaneSafe(l, dangerZone/2, dangerZone/2));
+        if (safeLanesExt.length === 1 && !blockedLanes.includes(safeLanesExt[0])) blockedLanes.push(safeLanesExt[0]);
+
+        let availableLanes = [0, 1, 2, 3, 4].filter(l => !blockedLanes.includes(l));
         if (availableLanes.length === 0) return;
 
-        // Choose a random available lane
         const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
-
         const colors = ['#f39c12', '#9b59b6', '#3498db', '#ecf0f1', '#e67e22', '#1abc9c'];
+        
         obstacles.push({
-            lane: lane,
-            x: roadLeft + lane * laneWidth + (laneWidth - w) / 2,
-            y: -h,
-            w: w,
-            h: h,
+            lane: lane, x: roadLeft + lane * laneWidth + (laneWidth - w) / 2, y: -h, w: w, h: h,
             color: colors[Math.floor(Math.random() * colors.length)],
-            speedModifier: Math.random() * 0.3 + 0.5 
+            speedModifier: Math.random() * 0.3 + 0.5,
+            isSwitcher: Math.random() < 0.25, // 25% chance to be a lane switcher
+            switchState: 'IDLE' // IDLE, BLINKING, SWITCHING, DONE
         });
     }
 
     function spawnScenery() {
-        const isLeft = Math.random() > 0.5;
-        const size = Math.random() * 30 + 20;
+        const isLeft = Math.random() > 0.5; const size = Math.random() * 30 + 20;
         const x = isLeft ? Math.random() * (roadLeft - size) : roadLeft + roadWidth + Math.random() * (width - roadLeft - roadWidth - size);
         const types = ['tree', 'rock', 'house'];
-        scenery.push({
-            x: x, y: -size * 2, size: size,
-            type: types[Math.floor(Math.random() * types.length)],
-            color: Math.random() > 0.5 ? '#27ae60' : '#2ecc71'
-        });
+        scenery.push({ x: x, y: -size * 2, size: size, type: types[Math.floor(Math.random() * types.length)], color: Math.random() > 0.5 ? '#27ae60' : '#2ecc71' });
     }
 
     // --- Update Logic ---
-    let obstacleTimer = 0;
-    let sceneryTimer = 0;
+    let obstacleTimer = 0; let sceneryTimer = 0;
 
     function update(dt) {
         if (state !== 'PLAYING') return;
 
-        // Realistic Acceleration & Deceleration
-        if (isAccelerating) {
-            speed += accelRate * dt;
-            if (speed > maxSpeed) speed = maxSpeed;
-        } else {
-            speed -= decelRate * dt;
-            if (speed < minSpeed) speed = minSpeed;
-        }
+        // Speed Logic
+        if (isAccelerating) { speed += accelRate * dt; if (speed > maxSpeed) speed = maxSpeed; } 
+        else { speed -= decelRate * dt; if (speed < minSpeed) speed = minSpeed; }
 
-        score += speed * dt * 2;
-        scoreEl.innerText = Math.floor(score);
-
-        const speedKmh = Math.floor(speed * 9);
-        speedText.innerText = `${speedKmh} km/h`;
-        
-        // Scale speedometer UI angle based on new max speed (25 * 9 = 225)
-        const angle = -130 + (speedKmh / 230) * 260; 
-        speedNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-        
+        score += speed * dt * 2; scoreEl.innerText = Math.floor(score);
+        const speedKmh = Math.floor(speed * 9); speedText.innerText = `${speedKmh} km/h`;
+        const angle = -130 + (speedKmh / 230) * 260; speedNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
         AudioSys.updateEngine(speed);
 
-        // Steering Logic
+        // Player Steering
         bike.targetX = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
         const steerDiff = bike.targetX - bike.x;
-        
         bike.x += steerDiff * (dt * 8); 
-        
-        bike.lean = steerDiff * 0.15; 
-        bike.lean = Math.max(-25, Math.min(25, bike.lean)); 
+        bike.lean = Math.max(-25, Math.min(25, steerDiff * 0.15)); 
 
-        laneOffset += speed * 0.5;
-        if (laneOffset > 40) laneOffset = 0;
+        laneOffset += speed * 0.5; if (laneOffset > 40) laneOffset = 0;
 
-        // Increased spawn rate (timer lowered to 3.5 to consistently yield 6-8 cars on screen)
-        obstacleTimer += speed * dt;
-        if (obstacleTimer > 3.5) {
-            spawnObstacle();
-            obstacleTimer = 0;
-        }
+        // Spawning
+        obstacleTimer += speed * dt; if (obstacleTimer > 3.5) { spawnObstacle(); obstacleTimer = 0; }
+        sceneryTimer += speed * dt; if (sceneryTimer > 50) { spawnScenery(); sceneryTimer = 0; }
 
-        sceneryTimer += speed * dt;
-        if (sceneryTimer > 50) {
-            spawnScenery();
-            sceneryTimer = 0;
-        }
-
-        // Update Entity Positions
+        // Car Logic (Movement & Lane Switching)
         for (let i = obstacles.length - 1; i >= 0; i--) {
             let obs = obstacles[i];
             obs.y += speed * obs.speedModifier * dt * 50;
             
-            let hitMargin = 5;
-            if (bike.x + hitMargin < obs.x + obs.w - hitMargin &&
-                bike.x + bike.w - hitMargin > obs.x + hitMargin &&
-                bike.y + hitMargin < obs.y + obs.h - hitMargin &&
-                bike.y + bike.h - hitMargin > obs.y + hitMargin) {
-                gameOver();
+            // Switching Mechanic
+            if (obs.isSwitcher) {
+                if (obs.switchState === 'IDLE' && obs.y > 0 && obs.y < height * 0.4) {
+                    // Decide to switch
+                    let dir = Math.random() < 0.5 ? -1 : 1;
+                    let targetL = obs.lane + dir;
+                    if (targetL >= 0 && targetL <= 4 && isLaneSafe(targetL, obs.y, obs.h * 1.5)) {
+                        obs.switchState = 'BLINKING';
+                        obs.targetLane = targetL;
+                        obs.switchTimer = 1.0;
+                        obs.blinkPulse = 0;
+                        obs.blinkOn = false;
+                    } else {
+                        obs.isSwitcher = false; // Give up
+                    }
+                } else if (obs.switchState === 'BLINKING') {
+                    obs.switchTimer -= dt;
+                    obs.blinkPulse += dt;
+                    if (obs.blinkPulse > 0.3) {
+                        obs.blinkOn = !obs.blinkOn;
+                        obs.blinkPulse = 0;
+                        if (obs.blinkOn) AudioSys.playBlink();
+                    }
+                    if (obs.switchTimer <= 0) {
+                        // Final safety check
+                        if (isLaneSafe(obs.targetLane, obs.y, obs.h * 1.2)) {
+                            obs.switchState = 'SWITCHING';
+                        } else {
+                            obs.switchState = 'DONE'; // Cancel switch
+                        }
+                    }
+                } else if (obs.switchState === 'SWITCHING') {
+                    let targetX = roadLeft + obs.targetLane * laneWidth + (laneWidth - obs.w) / 2;
+                    obs.x += (targetX - obs.x) * (dt * 5); // Glide over
+                    if (Math.abs(obs.x - targetX) < 2) {
+                        obs.x = targetX;
+                        obs.lane = obs.targetLane;
+                        obs.switchState = 'DONE';
+                    }
+                }
             }
 
+            // Player Collision Detection
+            let hitMargin = 5;
+            if (bike.x + hitMargin < obs.x + obs.w - hitMargin && bike.x + bike.w - hitMargin > obs.x + hitMargin &&
+                bike.y + hitMargin < obs.y + obs.h - hitMargin && bike.y + bike.h - hitMargin > obs.y + hitMargin) {
+                gameOver();
+            }
             if (obs.y > height) obstacles.splice(i, 1);
         }
 
@@ -594,136 +624,90 @@
 
     // --- Drawing Logic ---
     function draw() {
-        ctx.fillStyle = '#55a630'; 
-        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#55a630'; ctx.fillRect(0, 0, width, height);
 
         ctx.save();
-        if (shakeTime > 0) {
-            const dx = (Math.random() - 0.5) * 20;
-            const dy = (Math.random() - 0.5) * 20;
-            ctx.translate(dx, dy);
-            shakeTime--;
-        }
+        if (shakeTime > 0) { ctx.translate((Math.random()-0.5)*20, (Math.random()-0.5)*20); shakeTime--; }
 
-        ctx.fillStyle = '#7f8c8d';
-        ctx.fillRect(roadLeft, 0, roadWidth, height);
-        
-        ctx.fillStyle = '#ecf0f1';
-        ctx.fillRect(roadLeft - 5, 0, 5, height);
-        ctx.fillRect(roadLeft + roadWidth, 0, 5, height);
+        // Road
+        ctx.fillStyle = '#7f8c8d'; ctx.fillRect(roadLeft, 0, roadWidth, height);
+        ctx.fillStyle = '#ecf0f1'; ctx.fillRect(roadLeft - 5, 0, 5, height); ctx.fillRect(roadLeft + roadWidth, 0, 5, height);
 
-        ctx.strokeStyle = '#bdc3c7';
-        ctx.lineWidth = 4;
-        ctx.setLineDash([20, 20]);
-        ctx.lineDashOffset = -laneOffset;
+        ctx.strokeStyle = '#bdc3c7'; ctx.lineWidth = 4; ctx.setLineDash([20, 20]); ctx.lineDashOffset = -laneOffset;
         for (let i = 1; i < 5; i++) {
-            ctx.beginPath();
-            ctx.moveTo(roadLeft + i * laneWidth, 0);
-            ctx.lineTo(roadLeft + i * laneWidth, height);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(roadLeft + i * laneWidth, 0); ctx.lineTo(roadLeft + i * laneWidth, height); ctx.stroke();
         }
         ctx.setLineDash([]);
 
+        // Scenery
         scenery.forEach(sc => {
             if (sc.type === 'tree') {
-                ctx.fillStyle = '#8e44ad'; 
-                ctx.fillRect(sc.x + sc.size*0.4, sc.y + sc.size*0.5, sc.size*0.2, sc.size*0.5);
-                ctx.fillStyle = sc.color;
-                ctx.beginPath();
-                ctx.arc(sc.x + sc.size/2, sc.y + sc.size/2, sc.size/2, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = '#8e44ad'; ctx.fillRect(sc.x + sc.size*0.4, sc.y + sc.size*0.5, sc.size*0.2, sc.size*0.5);
+                ctx.fillStyle = sc.color; ctx.beginPath(); ctx.arc(sc.x + sc.size/2, sc.y + sc.size/2, sc.size/2, 0, Math.PI * 2); ctx.fill();
             } else if (sc.type === 'rock') {
-                ctx.fillStyle = '#95a5a6';
-                ctx.beginPath();
-                ctx.moveTo(sc.x, sc.y + sc.size);
-                ctx.lineTo(sc.x + sc.size/2, sc.y);
-                ctx.lineTo(sc.x + sc.size, sc.y + sc.size);
-                ctx.fill();
+                ctx.fillStyle = '#95a5a6'; ctx.beginPath(); ctx.moveTo(sc.x, sc.y + sc.size); ctx.lineTo(sc.x + sc.size/2, sc.y); ctx.lineTo(sc.x + sc.size, sc.y + sc.size); ctx.fill();
             } else {
-                ctx.fillStyle = '#c0392b';
-                ctx.beginPath();
-                ctx.moveTo(sc.x, sc.y + sc.size*0.4);
-                ctx.lineTo(sc.x + sc.size/2, sc.y);
-                ctx.lineTo(sc.x + sc.size, sc.y + sc.size*0.4);
-                ctx.fill();
-                ctx.fillStyle = '#ecf0f1';
-                ctx.fillRect(sc.x + sc.size*0.1, sc.y + sc.size*0.4, sc.size*0.8, sc.size*0.6);
+                ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(sc.x, sc.y + sc.size*0.4); ctx.lineTo(sc.x + sc.size/2, sc.y); ctx.lineTo(sc.x + sc.size, sc.y + sc.size*0.4); ctx.fill();
+                ctx.fillStyle = '#ecf0f1'; ctx.fillRect(sc.x + sc.size*0.1, sc.y + sc.size*0.4, sc.size*0.8, sc.size*0.6);
             }
         });
 
+        // Obstacles (Cars)
         obstacles.forEach(obs => {
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.fillRect(obs.x + 5, obs.y + 5, obs.w, obs.h);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(obs.x + 5, obs.y + 5, obs.w, obs.h);
+            ctx.fillStyle = obs.color; ctx.beginPath(); ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5); ctx.fill();
+            ctx.fillStyle = '#2c3e50'; ctx.fillRect(obs.x + 4, obs.y + obs.h*0.2, obs.w - 8, obs.h*0.2); ctx.fillRect(obs.x + 4, obs.y + obs.h*0.7, obs.w - 8, obs.h*0.15); 
             
-            ctx.fillStyle = obs.color;
-            ctx.beginPath();
-            ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5);
-            ctx.fill();
-            
-            ctx.fillStyle = '#2c3e50';
-            ctx.fillRect(obs.x + 4, obs.y + obs.h*0.2, obs.w - 8, obs.h*0.2); 
-            ctx.fillRect(obs.x + 4, obs.y + obs.h*0.7, obs.w - 8, obs.h*0.15); 
+            // Draw Blinker
+            if (obs.switchState === 'BLINKING' && obs.blinkOn) {
+                ctx.fillStyle = '#f39c12'; // Orange
+                const isLeft = obs.targetLane < obs.lane;
+                const bx = isLeft ? obs.x - 2 : obs.x + obs.w - 6;
+                ctx.fillRect(bx, obs.y + 5, 8, 8); // Front blinker
+                ctx.fillRect(bx, obs.y + obs.h - 13, 8, 8); // Rear blinker
+            }
         });
 
         // Player Bike 
         if (state !== 'GAMEOVER' || shakeTime % 4 < 2) { 
-            ctx.save();
-            ctx.translate(bike.x + bike.w/2, bike.y + bike.h/2);
-            ctx.rotate(bike.lean * Math.PI / 180);
-            
-            let bx = -bike.w/2;
-            let by = -bike.h/2;
+            ctx.save(); ctx.translate(bike.x + bike.w/2, bike.y + bike.h/2); ctx.rotate(bike.lean * Math.PI / 180);
+            let bx = -bike.w/2; let by = -bike.h/2;
 
             ctx.drawImage(bikeSprite, bx, by, bike.w, bike.h);
             
             if (isAccelerating) {
-                const flameLength = 10 + Math.random() * 15;
-                ctx.fillStyle = '#f39c12';
-                ctx.beginPath();
-                ctx.moveTo(bx + bike.w*0.75, by + bike.h);
-                ctx.lineTo(bx + bike.w*0.80, by + bike.h + flameLength);
-                ctx.lineTo(bx + bike.w*0.85, by + bike.h);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(bx + bike.w*0.15, by + bike.h);
-                ctx.lineTo(bx + bike.w*0.20, by + bike.h + flameLength);
-                ctx.lineTo(bx + bike.w*0.25, by + bike.h);
-                ctx.fill();
+                const flameL = 10 + Math.random() * 15; ctx.fillStyle = '#f39c12';
+                ctx.beginPath(); ctx.moveTo(bx + bike.w*0.75, by + bike.h); ctx.lineTo(bx + bike.w*0.80, by + bike.h + flameL); ctx.lineTo(bx + bike.w*0.85, by + bike.h); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(bx + bike.w*0.15, by + bike.h); ctx.lineTo(bx + bike.w*0.20, by + bike.h + flameL); ctx.lineTo(bx + bike.w*0.25, by + bike.h); ctx.fill();
             }
             ctx.restore();
         }
-
         ctx.restore();
     }
 
     // --- Main Loop ---
     function gameLoop(timestamp) {
-        let dt = (timestamp - lastTime) / 1000;
-        lastTime = timestamp;
-        if (dt > 0.1) dt = 0.1; 
-
-        update(dt);
-        draw();
-
-        if (state === 'PLAYING' || shakeTime > 0) {
+        if (state === 'PLAYING') {
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1; 
+            update(dt);
+        }
+        
+        if (state === 'PLAYING' || state === 'PAUSED' || shakeTime > 0) {
+            draw();
             requestAnimationFrame(gameLoop);
         }
+        lastTime = timestamp;
     }
 
     // --- Button Listeners ---
     document.getElementById('btn-play').addEventListener('click', requestPermissionsAndStart);
     document.getElementById('btn-retry').addEventListener('click', requestPermissionsAndStart);
-    document.getElementById('btn-menu').addEventListener('click', () => {
-        state = 'MENU';
-        gameOverScreen.classList.add('hidden');
-        menuScreen.classList.remove('hidden');
-        ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(0,0,width,height);
-    });
+    document.getElementById('btn-menu').addEventListener('click', goToMenu);
+    document.getElementById('btn-menu-from-pause').addEventListener('click', goToMenu);
 
     // Initial render
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(0,0,width,height);
+    ctx.fillStyle = '#2c3e50'; ctx.fillRect(0,0,width,height);
 
 </script>
 </body>
