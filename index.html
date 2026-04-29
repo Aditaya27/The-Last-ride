@@ -17,13 +17,13 @@
         .hidden { opacity: 0; pointer-events: none !important; display: none !important; }
         
         h1 { color: #f1c40f; font-size: 3rem; margin-bottom: 10px; text-transform: uppercase; text-align: center;}
-        h2 { color: #ecf0f1; font-size: 1.2rem; margin-bottom: 30px; text-align: center; padding: 0 20px;}
+        h2 { color: #ecf0f1; font-size: 1.5rem; margin-bottom: 30px; }
         .score-text { color: #fff; font-size: 1.2rem; margin: 5px 0; }
         
-        button.action-btn { background: #e74c3c; color: white; border: none; padding: 15px 40px; font-size: 1.5rem; font-weight: bold; border-radius: 30px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s; margin-top: 10px;}
+        button.action-btn { background: #e74c3c; color: white; border: none; padding: 15px 40px; font-size: 1.5rem; font-weight: bold; border-radius: 30px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s; margin-top: 20px;}
         button.action-btn:active { transform: scale(0.95); }
 
-        .settings { margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 15px; }
+        .settings { margin-top: 30px; background: rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 15px; }
         .toggle-row { display: flex; justify-content: space-between; align-items: center; width: 260px; margin: 15px 0; color: #fff; font-size: 1.2rem;}
         
         /* Switch Toggle */
@@ -42,21 +42,19 @@
         #score-board .current { font-size: 2rem; font-weight: bold; color: #f1c40f; }
         #score-board .high { font-size: 1rem; color: #bdc3c7; }
 
-        /* Speedometer - Adjusted height */
-        #speedometer { position: absolute; bottom: 3vh; left: calc(50% - 40px); width: 80px; height: 80px; background: rgba(0,0,0,0.6); border: 4px solid #34495e; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 4; }
-        #speed-text { position: absolute; bottom: 12px; color: white; font-weight: bold; font-size: 0.7rem; }
-        .needle { position: absolute; bottom: 50%; left: 50%; width: 3px; height: 30px; background: #e74c3c; transform-origin: bottom center; transform: translateX(-50%) rotate(-130deg); transition: transform 0.1s linear; border-radius: 2px; }
-        .center-dot { position: absolute; width: 10px; height: 10px; background: #ecf0f1; border-radius: 50%; }
+        /* Speedometer - Moved to Top Middle */
+        #speedometer { position: absolute; top: 20px; left: calc(50% - 50px); width: 100px; height: 100px; background: rgba(0,0,0,0.6); border: 4px solid #34495e; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+        #speed-text { position: absolute; bottom: 15px; color: white; font-weight: bold; font-size: 0.9rem; }
+        .needle { position: absolute; bottom: 50%; left: 50%; width: 4px; height: 40px; background: #e74c3c; transform-origin: bottom center; transform: translateX(-50%) rotate(-130deg); transition: transform 0.1s linear; border-radius: 2px; }
+        .center-dot { position: absolute; width: 12px; height: 12px; background: #ecf0f1; border-radius: 50%; }
 
         /* Mobile Controls Hint */
         #controls-hint { position: absolute; top: 20px; left: 20px; color: rgba(255,255,255,0.8); text-align: left; font-size: 0.9rem; text-shadow: 1px 1px 3px #000; }
 
-        /* Button Steering Overlay - Moved up */
-        #steering-btns { position: absolute; bottom: 12vh; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 6; }
+        /* Button Steering Overlay */
+        #steering-btns { position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; pointer-events: none; z-index: 6; }
         .steer-btn { width: 70px; height: 70px; background: rgba(0,0,0,0.4); border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: rgba(255,255,255,0.8); font-size: 2rem; pointer-events: auto; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .steer-btn:active { background: rgba(255,255,255,0.4); border-color: white; color: white; transform: scale(0.95); }
-        
-        .notice { font-size: 0.75rem; color: #bdc3c7; margin-top: 15px; text-align: center; max-width: 80%; }
     </style>
 </head>
 <body>
@@ -76,10 +74,10 @@
         <div id="speedometer">
             <div class="needle" id="speed-needle"></div>
             <div class="center-dot"></div>
-            <div id="speed-text">0</div>
+            <div id="speed-text">0 km/h</div>
         </div>
 
-        <!-- Button Controls -->
+        <!-- Button Controls (Hidden if Tilt is selected) -->
         <div id="steering-btns" class="hidden">
             <div id="btn-left" class="steer-btn">◀</div>
             <div id="btn-right" class="steer-btn">▶</div>
@@ -116,7 +114,6 @@
                 </label>
             </div>
         </div>
-        <div class="notice">Note: Tilt requires HTTPS on Android/Chrome to function correctly.</div>
     </div>
 
     <!-- Game Over Screen -->
@@ -134,6 +131,91 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let width, height;
+
+    // --- Pre-render Realistic Bike Sprite ---
+    // Creates a highly detailed off-screen canvas to act as the 2D image sprite
+    const bikeSprite = document.createElement('canvas');
+    bikeSprite.width = 60;
+    bikeSprite.height = 120;
+    const bctx = bikeSprite.getContext('2d');
+
+    // Shadow
+    bctx.fillStyle = 'rgba(0,0,0,0.5)';
+    bctx.beginPath();
+    bctx.ellipse(30, 60, 20, 55, 0, 0, Math.PI * 2);
+    bctx.fill();
+
+    // Front Tire
+    bctx.fillStyle = '#111';
+    bctx.fillRect(25, 2, 10, 25);
+    
+    // Front Axle & Forks
+    bctx.fillStyle = '#bdc3c7';
+    bctx.fillRect(22, 12, 3, 15);
+    bctx.fillRect(35, 12, 3, 15);
+
+    // Windshield (Tinted Cyan)
+    bctx.fillStyle = 'rgba(0, 200, 255, 0.6)';
+    bctx.beginPath();
+    bctx.moveTo(30, 15);
+    bctx.lineTo(40, 35);
+    bctx.lineTo(20, 35);
+    bctx.fill();
+
+    // Body Fairings (Sport Red)
+    bctx.fillStyle = '#e74c3c';
+    bctx.beginPath();
+    bctx.moveTo(30, 8); // Nose
+    bctx.lineTo(45, 45); // Right wide
+    bctx.lineTo(35, 80); // Right tail
+    bctx.lineTo(25, 80); // Left tail
+    bctx.lineTo(15, 45); // Left wide
+    bctx.fill();
+
+    // Carbon Fiber Accents (Dark Gray)
+    bctx.fillStyle = '#2c3e50';
+    bctx.beginPath();
+    bctx.moveTo(30, 25);
+    bctx.lineTo(38, 48);
+    bctx.lineTo(22, 48);
+    bctx.fill();
+
+    // Rider (Leather Suit & Racing Helmet)
+    // Shoulders
+    bctx.fillStyle = '#1a1a1a';
+    bctx.beginPath();
+    bctx.roundRect(18, 50, 24, 30, 8);
+    bctx.fill();
+    // Helmet Base
+    bctx.fillStyle = '#c0392b';
+    bctx.beginPath();
+    bctx.arc(30, 55, 10, 0, Math.PI * 2);
+    bctx.fill();
+    // Helmet Visor
+    bctx.fillStyle = '#000';
+    bctx.beginPath();
+    bctx.arc(30, 53, 7, Math.PI, Math.PI * 2);
+    bctx.fill();
+    // Arms holding handlebars
+    bctx.strokeStyle = '#1a1a1a';
+    bctx.lineWidth = 4;
+    bctx.beginPath();
+    bctx.moveTo(20, 55); bctx.lineTo(15, 40); bctx.lineTo(25, 35); // Left arm
+    bctx.moveTo(40, 55); bctx.lineTo(45, 40); bctx.lineTo(35, 35); // Right arm
+    bctx.stroke();
+
+    // Dual Exhaust Pipes
+    bctx.fillStyle = '#95a5a6';
+    bctx.fillRect(40, 80, 4, 25); // Right pipe
+    bctx.fillRect(16, 80, 4, 25); // Left pipe
+
+    // Rear Tire
+    bctx.fillStyle = '#111';
+    bctx.fillRect(23, 95, 14, 23);
+
+    // Tail Light
+    bctx.fillStyle = '#ff0000';
+    bctx.fillRect(26, 95, 8, 4);
 
     // --- UI Elements ---
     const menuScreen = document.getElementById('menu-screen');
@@ -153,30 +235,25 @@
     let controlMode = 'TILT'; // TILT or BUTTONS
     let lastTime = 0;
     let shakeTime = 0;
-    let tiltInitialized = false;
     
-    // Mechanics
     let score = 0;
     let highScore = localStorage.getItem('bikeHighScore') || 0;
     hiScoreEl.innerText = Math.floor(highScore);
     
     let baseSpeed = 0;
     let minBaseSpeed = 5;
-    let maxBaseSpeed = 20;
+    let maxBaseSpeed = 22;
     let speed = 0;
     let isAccelerating = false;
     
-    // Road & Lanes (5 Lanes)
     const ROAD_WIDTH_RATIO = 0.6; 
     let roadLeft, roadWidth, laneWidth;
     
-    // Entities
-    let bike = { lane: 2, x: 0, y: 0, w: 30, h: 60, targetX: 0, leanAngle: 0 };
+    let bike = { lane: 2, x: 0, y: 0, w: 40, h: 80, targetX: 0, lean: 0 };
     let obstacles = [];
     let scenery = [];
     let laneOffset = 0;
     
-    // Toggles
     let sfxEnabled = true;
     let bgmEnabled = true;
 
@@ -187,7 +264,6 @@
             if (!this.ctx) {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Engine Sound
                 this.engineOsc = this.ctx.createOscillator();
                 this.engineOsc.type = 'sawtooth';
                 this.engineGain = this.ctx.createGain();
@@ -202,7 +278,6 @@
                 this.engineGain.connect(this.ctx.destination);
                 this.engineOsc.start();
                 
-                // BGM Sound
                 this.bgmOsc1 = this.ctx.createOscillator();
                 this.bgmOsc2 = this.ctx.createOscillator();
                 this.bgmGain = this.ctx.createGain();
@@ -269,32 +344,34 @@
         roadLeft = (width - roadWidth) / 2;
         laneWidth = roadWidth / 5;
         
-        bike.w = laneWidth * 0.4;
+        bike.w = laneWidth * 0.55;
         bike.h = bike.w * 2;
-        
-        // Positioned 75% down the screen to avoid zooming overlap issues
-        bike.y = height * 0.75; 
-        
-        // Start target exactly where it spawns to prevent initial jump
-        bike.targetX = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
-        bike.x = bike.targetX; 
+        bike.y = height * 0.70; 
     }
     window.addEventListener('resize', resize);
+    resize();
 
     // --- Inputs & Controls ---
+    function requestPermissionsAndStart() {
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(permissionState => {
+                if (permissionState === 'granted') {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                }
+                startGame();
+            }).catch(console.error);
+        } else {
+            window.addEventListener('deviceorientation', handleOrientation);
+            startGame();
+        }
+    }
+
     function handleOrientation(e) {
         if (state !== 'PLAYING' || controlMode !== 'TILT') return;
-        let tilt = e.gamma || 0; // gamma is left/right
-        
-        // Handle device held flat or vertical edge cases
-        if (Math.abs(e.beta) > 80 && Math.abs(e.beta) < 100) {
-           tilt = e.beta > 0 ? e.gamma : -e.gamma; 
-        }
+        let tilt = e.gamma || 0;
+        if (tilt < -30) tilt = -30;
+        if (tilt > 30) tilt = 30;
 
-        if (tilt < -25) tilt = -25;
-        if (tilt > 25) tilt = 25;
-
-        // Smooth mapping across 5 lanes based on tilt thresholds
         if (tilt < -15) bike.lane = 0;
         else if (tilt < -5) bike.lane = 1;
         else if (tilt < 5) bike.lane = 2;
@@ -302,19 +379,15 @@
         else bike.lane = 4;
     }
 
-    // Button Steering Logic
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
-
     function moveLeft(e) { e.preventDefault(); e.stopPropagation(); if (state === 'PLAYING') bike.lane = Math.max(0, bike.lane - 1); }
     function moveRight(e) { e.preventDefault(); e.stopPropagation(); if (state === 'PLAYING') bike.lane = Math.min(4, bike.lane + 1); }
-
     btnLeft.addEventListener('touchstart', moveLeft, {passive: false});
     btnLeft.addEventListener('mousedown', moveLeft);
     btnRight.addEventListener('touchstart', moveRight, {passive: false});
     btnRight.addEventListener('mousedown', moveRight);
 
-    // Canvas Acceleration (Rest of the screen)
     const handleStart = (e) => { if(e.target === canvas) { isAccelerating = true; e.preventDefault(); }};
     const handleEnd = (e) => { if(e.target === canvas) { isAccelerating = false; e.preventDefault(); }};
     window.addEventListener('touchstart', handleStart, {passive: false});
@@ -322,7 +395,6 @@
     window.addEventListener('mousedown', handleStart);
     window.addEventListener('mouseup', handleEnd);
 
-    // Settings Menu Toggles
     document.getElementById('controls-toggle').addEventListener('change', (e) => {
         controlMode = e.target.checked ? 'TILT' : 'BUTTONS';
         document.getElementById('control-label').innerText = controlMode;
@@ -334,34 +406,19 @@
     });
 
     // --- Core Game Functions ---
-    function initTiltControl() {
-        if (!tiltInitialized && controlMode === 'TILT') {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(permissionState => {
-                    if (permissionState === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                    }
-                }).catch(console.error);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
-            tiltInitialized = true;
-        }
-    }
-
     function startGame() {
         AudioSys.init();
         if (AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
-        initTiltControl();
         
-        resize(); // Recalculate positions
         state = 'PLAYING';
         score = 0;
         baseSpeed = minBaseSpeed;
         speed = 0;
         isAccelerating = false;
         bike.lane = 2;
-        bike.x = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2; // Start exactly in center
+        bike.lean = 0;
+        bike.x = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
+        
         obstacles = [];
         scenery = [];
         lastTime = performance.now();
@@ -370,7 +427,6 @@
         gameOverScreen.classList.add('hidden');
         hud.classList.remove('hidden');
 
-        // Apply Control Settings
         if (controlMode === 'BUTTONS') {
             steeringBtns.classList.remove('hidden');
             controlsHint.innerHTML = "Tap Arrows to Steer<br>Hold Screen to Accelerate";
@@ -405,21 +461,23 @@
 
     // --- Entity Spawning ---
     function spawnObstacle() {
-        const lane = Math.floor(Math.random() * 5);
-        const w = laneWidth * 0.6;
+        const w = laneWidth * 0.7;
         const h = w * 1.8;
         
-        // Prevent overlapping in the SAME lane
-        const sameLaneCars = obstacles.filter(c => c.lane === lane);
-        const lastCarInLane = sameLaneCars[sameLaneCars.length - 1];
-        if (lastCarInLane && lastCarInLane.y < h * 2.5) return; 
+        // Smart Traffic Algorithm: Ensure at least one lane is always open
+        const dangerZone = h * 3; 
+        const recentCars = obstacles.filter(c => c.y < dangerZone);
+        const blockedLanes = recentCars.map(c => c.lane);
+        
+        let availableLanes = [0, 1, 2, 3, 4].filter(l => !blockedLanes.includes(l));
+        
+        // If 4 lanes are already blocked, force an open gap to ensure playability
+        if (availableLanes.length <= 1) return;
 
-        // Prevent blocking ALL 5 lanes creating an impassable wall
-        const topCars = obstacles.filter(c => c.y < h * 2.5);
-        const occupiedLanes = new Set(topCars.map(c => c.lane));
-        if (occupiedLanes.size >= 4 && !occupiedLanes.has(lane)) return; // Keep at least 1 lane completely free
+        // Choose a random available lane
+        const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
 
-        const colors = ['#e74c3c', '#9b59b6', '#f39c12', '#3498db', '#ecf0f1', '#ff9f43', '#1dd1a1'];
+        const colors = ['#f39c12', '#9b59b6', '#3498db', '#ecf0f1', '#e67e22', '#1abc9c'];
         obstacles.push({
             lane: lane,
             x: roadLeft + lane * laneWidth + (laneWidth - w) / 2,
@@ -427,7 +485,7 @@
             w: w,
             h: h,
             color: colors[Math.floor(Math.random() * colors.length)],
-            speedModifier: Math.random() * 0.3 + 0.6 // Slower than player
+            speedModifier: Math.random() * 0.3 + 0.5 
         });
     }
 
@@ -450,41 +508,34 @@
     function update(dt) {
         if (state !== 'PLAYING') return;
 
-        // Difficulty & Speed Update
-        baseSpeed = Math.min(maxBaseSpeed, baseSpeed + dt * 0.1); 
-        const targetSpeed = baseSpeed + (isAccelerating ? 10 : 0);
-        speed += (targetSpeed - speed) * 0.1; 
+        baseSpeed = Math.min(maxBaseSpeed, baseSpeed + dt * 0.05); 
+        const targetSpeed = baseSpeed + (isAccelerating ? 12 : 0);
+        speed += (targetSpeed - speed) * 0.15; 
 
         score += speed * dt * 2;
         scoreEl.innerText = Math.floor(score);
 
-        // Update Speedometer UI
-        const speedKmh = Math.floor(speed * 8);
-        speedText.innerText = `${speedKmh}`;
-        const angle = -130 + (speedKmh / 240) * 260; 
+        const speedKmh = Math.floor(speed * 9);
+        speedText.innerText = `${speedKmh} km/h`;
+        const angle = -130 + (speedKmh / 300) * 260; 
         speedNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
         
         AudioSys.updateEngine(speed);
 
-        // Bike Movement & Smooth Lean Steering
         bike.targetX = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
-        let diff = bike.targetX - bike.x;
+        const steerDiff = bike.targetX - bike.x;
         
-        // 0.08 multiplier for smooth glide instead of instant snap
-        bike.x += diff * 0.08; 
+        bike.x += steerDiff * (dt * 8); 
         
-        // Calculate lean angle based on horizontal movement speed
-        bike.leanAngle = Math.max(-20, Math.min(20, diff * 0.15));
+        bike.lean = steerDiff * 0.15; 
+        bike.lean = Math.max(-25, Math.min(25, bike.lean)); 
 
-        // Road Animation
         laneOffset += speed * 0.5;
         if (laneOffset > 40) laneOffset = 0;
 
-        // Spawning (Time based, frequency increases with speed)
-        obstacleTimer += dt;
-        // Spawns a car every ~1.5s down to ~0.35s at max speed. Ensures 3-5 cars exist at once!
-        let currentSpawnRate = Math.max(0.35, 1.5 - (speed / 20)); 
-        if (obstacleTimer > currentSpawnRate) {
+        // Increased spawn rate significantly (timer lowered from 20 to 8)
+        obstacleTimer += speed * dt;
+        if (obstacleTimer > 8) {
             spawnObstacle();
             obstacleTimer = 0;
         }
@@ -495,12 +546,10 @@
             sceneryTimer = 0;
         }
 
-        // Move Entities & Collision
         for (let i = obstacles.length - 1; i >= 0; i--) {
             let obs = obstacles[i];
             obs.y += speed * obs.speedModifier * dt * 50;
             
-            // Collision Detection (Hitbox slightly smaller than visual to be fair)
             let hitMargin = 5;
             if (bike.x + hitMargin < obs.x + obs.w - hitMargin &&
                 bike.x + bike.w - hitMargin > obs.x + hitMargin &&
@@ -532,7 +581,6 @@
             shakeTime--;
         }
 
-        // Road
         ctx.fillStyle = '#7f8c8d';
         ctx.fillRect(roadLeft, 0, roadWidth, height);
         
@@ -540,7 +588,6 @@
         ctx.fillRect(roadLeft - 5, 0, 5, height);
         ctx.fillRect(roadLeft + roadWidth, 0, 5, height);
 
-        // Lane Markers
         ctx.strokeStyle = '#bdc3c7';
         ctx.lineWidth = 4;
         ctx.setLineDash([20, 20]);
@@ -553,7 +600,6 @@
         }
         ctx.setLineDash([]);
 
-        // Scenery
         scenery.forEach(sc => {
             if (sc.type === 'tree') {
                 ctx.fillStyle = '#8e44ad'; 
@@ -581,7 +627,6 @@
             }
         });
 
-        // Obstacles (Cars)
         obstacles.forEach(obs => {
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
             ctx.fillRect(obs.x + 5, obs.y + 5, obs.w, obs.h);
@@ -596,50 +641,39 @@
             ctx.fillRect(obs.x + 4, obs.y + obs.h*0.7, obs.w - 8, obs.h*0.15); 
         });
 
-        // Player Bike (with Lean)
+        // Player Bike (Using Detailed Sprite)
         if (state !== 'GAMEOVER' || shakeTime % 4 < 2) { 
             ctx.save();
-            
-            // Translate to center of bike, rotate for lean, translate back
             ctx.translate(bike.x + bike.w/2, bike.y + bike.h/2);
-            ctx.rotate(bike.leanAngle * Math.PI / 180);
-            ctx.translate(-(bike.x + bike.w/2), -(bike.y + bike.h/2));
-
-            // Shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.fillRect(bike.x + 5, bike.y + 5, bike.w, bike.h);
+            ctx.rotate(bike.lean * Math.PI / 180);
             
-            // Body
-            ctx.fillStyle = '#3498db';
-            ctx.beginPath();
-            ctx.roundRect(bike.x, bike.y, bike.w, bike.h, 4);
-            ctx.fill();
+            let bx = -bike.w/2;
+            let by = -bike.h/2;
 
-            // Rider
-            ctx.fillStyle = '#f1c40f';
-            ctx.beginPath();
-            ctx.arc(bike.x + bike.w/2, bike.y + bike.h*0.4, bike.w*0.35, 0, Math.PI*2);
-            ctx.fill();
-
-            // Tires
-            ctx.fillStyle = '#222';
-            ctx.fillRect(bike.x + bike.w*0.3, bike.y - 4, bike.w*0.4, 8); 
-            ctx.fillRect(bike.x + bike.w*0.3, bike.y + bike.h - 4, bike.w*0.4, 8); 
+            // Draw Pre-rendered Detailed Sprite
+            ctx.drawImage(bikeSprite, bx, by, bike.w, bike.h);
             
-            // Acceleration thrust
+            // Draw Dynamic Exhaust Flames when Accelerating
             if (isAccelerating) {
-                ctx.fillStyle = '#e67e22';
+                const flameLength = 10 + Math.random() * 15;
+                ctx.fillStyle = '#f39c12';
+                // Right Flame
                 ctx.beginPath();
-                ctx.moveTo(bike.x + bike.w*0.2, bike.y + bike.h + 2);
-                ctx.lineTo(bike.x + bike.w/2, bike.y + bike.h + 15 + Math.random()*10);
-                ctx.lineTo(bike.x + bike.w*0.8, bike.y + bike.h + 2);
+                ctx.moveTo(bx + bike.w*0.75, by + bike.h);
+                ctx.lineTo(bx + bike.w*0.80, by + bike.h + flameLength);
+                ctx.lineTo(bx + bike.w*0.85, by + bike.h);
+                ctx.fill();
+                // Left Flame
+                ctx.beginPath();
+                ctx.moveTo(bx + bike.w*0.15, by + bike.h);
+                ctx.lineTo(bx + bike.w*0.20, by + bike.h + flameLength);
+                ctx.lineTo(bx + bike.w*0.25, by + bike.h);
                 ctx.fill();
             }
-
             ctx.restore();
         }
 
-        ctx.restore(); // Restore camera shake
+        ctx.restore();
     }
 
     // --- Main Loop ---
@@ -657,8 +691,8 @@
     }
 
     // --- Button Listeners ---
-    document.getElementById('btn-play').addEventListener('click', startGame);
-    document.getElementById('btn-retry').addEventListener('click', startGame);
+    document.getElementById('btn-play').addEventListener('click', requestPermissionsAndStart);
+    document.getElementById('btn-retry').addEventListener('click', requestPermissionsAndStart);
     document.getElementById('btn-menu').addEventListener('click', () => {
         state = 'MENU';
         gameOverScreen.classList.add('hidden');
@@ -667,8 +701,7 @@
         ctx.fillRect(0,0,width,height);
     });
 
-    // Initial setup
-    resize();
+    // Initial render
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(0,0,width,height);
 
