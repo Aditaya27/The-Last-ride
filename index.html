@@ -188,7 +188,7 @@
     bctx.fillStyle = 'rgba(0,0,0,0.5)';
     bctx.beginPath();
     if(bctx.ellipse) { bctx.ellipse(30, 60, 20, 55, 0, 0, Math.PI * 2); } 
-    else { bctx.arc(30, 60, 20, 0, Math.PI * 2); } // Fallback for ellipse
+    else { bctx.arc(30, 60, 20, 0, Math.PI * 2); } 
     bctx.fill();
     
     bctx.fillStyle = '#111'; bctx.fillRect(25, 2, 10, 25);
@@ -203,6 +203,41 @@
     bctx.fillStyle = '#95a5a6'; bctx.fillRect(40, 80, 4, 25); bctx.fillRect(16, 80, 4, 25); 
     bctx.fillStyle = '#111'; bctx.fillRect(23, 95, 14, 23);
     bctx.fillStyle = '#ff0000'; bctx.fillRect(26, 95, 8, 4);
+
+    // --- Pre-render Realistic Tree Sprite ---
+    const treeSprite = document.createElement('canvas');
+    treeSprite.width = 100; treeSprite.height = 100;
+    const tctx = treeSprite.getContext('2d');
+    
+    // Shadow
+    tctx.fillStyle = 'rgba(0,0,0,0.3)';
+    tctx.beginPath();
+    if(tctx.ellipse) { tctx.ellipse(50, 75, 30, 15, 0, 0, Math.PI * 2); }
+    else { tctx.arc(50, 75, 30, 0, Math.PI * 2); }
+    tctx.fill();
+    
+    // Tree Trunk
+    tctx.fillStyle = '#5c4033';
+    tctx.fillRect(45, 60, 10, 30);
+    
+    // Foliage (jagged edges to simulate realistic leaves)
+    tctx.translate(50, 50);
+    for (let layer = 0; layer < 5; layer++) {
+        let size = 40 - layer * 6;
+        tctx.fillStyle = `hsl(120, 50%, ${25 + layer * 8}%)`;
+        tctx.beginPath();
+        for (let i = 0; i < 16; i++) {
+            let angle = (i / 16) * Math.PI * 2;
+            let radius = size + (i % 2 === 0 ? 8 : -2) + (Math.random()*4 - 2);
+            tctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius - layer*5);
+        }
+        tctx.closePath();
+        tctx.fill();
+        tctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        tctx.lineWidth = 1;
+        tctx.stroke();
+    }
+    tctx.translate(-50, -50);
 
     // --- UI Elements ---
     const menuScreen = document.getElementById('menu-screen');
@@ -242,12 +277,12 @@
     
     let minSpeed = 5; let maxSpeed = 25; 
     let speed = minSpeed; let isAccelerating = false;
-    let accelRate = 2.0; let decelRate = 2.0; 
+    let accelRate = 6.0; let decelRate = 6.0; 
     
     let roadLeft, roadWidth, laneWidth;
     const ROAD_WIDTH_RATIO = 0.6; 
     
-    let bike = { lane: 2, x: 0, y: 0, w: 40, h: 80, targetX: 0, lean: 0 };
+    let bike = { lane: 2, x: 0, y: 0, w: 40, h: 80, targetX: 0, lean: 0, vx: 0 };
     let obstacles = [];
     let laneOffset = 0;
     let absoluteScroll = 0;
@@ -304,7 +339,7 @@
             if (!this.ctx) return;
             try {
                 if (state === 'PLAYING') {
-                    const windLevel = (speed / maxSpeed) * 0.4;
+                    const windLevel = (speed / maxSpeed) * 0.15;
                     this.windGain.gain.setTargetAtTime(bgmVol * Math.max(0.05, windLevel), this.ctx.currentTime, 0.5);
                     this.windFilter.frequency.setTargetAtTime(200 + (speed * 15), this.ctx.currentTime, 0.5);
                 } else if (state === 'PAUSED') {
@@ -333,7 +368,8 @@
 
                 let freq = 60 + (gear * 15) + (rpm * 120); 
                 this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
-                this.engineGain.gain.setTargetAtTime(sfxVol * (0.05 + rpm * 0.05), this.ctx.currentTime, 0.1);
+                // Lower intensity motor sound
+                this.engineGain.gain.setTargetAtTime(sfxVol * (0.015 + rpm * 0.015), this.ctx.currentTime, 0.1);
             } catch(e){}
         },
         playWhoosh() { 
@@ -348,7 +384,8 @@
                 const filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass';
                 filter.frequency.setValueAtTime(2000, this.ctx.currentTime); filter.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.3);
                 const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0, this.ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(bgmVol * 0.8, this.ctx.currentTime + 0.1); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
+                // Reduced swoosh volume
+                gain.gain.linearRampToValueAtTime(bgmVol * 0.15, this.ctx.currentTime + 0.1); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
                 
                 noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); noise.start();
             } catch(e){}
@@ -450,8 +487,8 @@
     function startGame() {
         AudioSys.init(); 
         if (AudioSys.ctx && AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
-        state = 'PLAYING'; score = 0; speed = minSpeed; isAccelerating = false;
-        bike.lane = 2; bike.lean = 0; bike.x = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
+        state = 'PLAYING'; score = 0; speed = 5; minSpeed = 5; maxSpeed = 25; isAccelerating = false;
+        bike.lane = 2; bike.lean = 0; bike.vx = 0; bike.x = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
         obstacles = []; absoluteScroll = 0; lastTime = performance.now();
         menuScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden');
         hud.classList.remove('hidden'); syncControls(controlMode); AudioSys.updateVolumes();
@@ -512,6 +549,9 @@
     function update(dt) {
         if (state !== 'PLAYING') return;
 
+        minSpeed += dt * 0.15;
+        maxSpeed += dt * 0.15;
+
         if (isAccelerating) { speed += accelRate * dt; if (speed > maxSpeed) speed = maxSpeed; } 
         else { speed -= decelRate * dt; if (speed < minSpeed) speed = minSpeed; }
 
@@ -522,9 +562,13 @@
         AudioSys.updateVolumes(); 
 
         bike.targetX = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
-        const steerDiff = bike.targetX - bike.x;
-        bike.x += steerDiff * (dt * 8); 
-        bike.lean = Math.max(-25, Math.min(25, steerDiff * 0.15)); 
+        let steerDiff = bike.targetX - bike.x;
+        let spring = 50;
+        let damper = 8;
+        let ax = steerDiff * spring - (bike.vx || 0) * damper;
+        bike.vx = (bike.vx || 0) + ax * dt;
+        bike.x += bike.vx * dt;
+        bike.lean = Math.max(-35, Math.min(35, bike.vx * 0.06)); 
 
         absoluteScroll += speed * dt * 50;
         laneOffset += speed * 0.5; if (laneOffset > 40) laneOffset = 0;
@@ -627,10 +671,8 @@
         let offset = absoluteScroll % treeSpacing;
         for (let i = -1; i < 6; i++) {
             let y = i * treeSpacing + offset;
-            ctx.fillStyle = '#8e44ad'; ctx.fillRect(roadLeft - 45, y + 20, 10, 20); 
-            ctx.fillStyle = '#27ae60'; ctx.beginPath(); ctx.arc(roadLeft - 40, y + 10, 25, 0, Math.PI * 2); ctx.fill(); 
-            ctx.fillStyle = '#8e44ad'; ctx.fillRect(roadLeft + roadWidth + 35, y + 20, 10, 20);
-            ctx.fillStyle = '#2ecc71'; ctx.beginPath(); ctx.arc(roadLeft + roadWidth + 40, y + 10, 25, 0, Math.PI * 2); ctx.fill();
+            ctx.drawImage(treeSprite, roadLeft - 80, y - 20, 80, 80);
+            ctx.drawImage(treeSprite, roadLeft + roadWidth + 0, y - 20, 80, 80);
         }
 
         obstacles.forEach(obs => {
