@@ -191,18 +191,54 @@
     else { bctx.arc(30, 60, 20, 0, Math.PI * 2); } 
     bctx.fill();
     
-    bctx.fillStyle = '#111'; bctx.fillRect(25, 2, 10, 25);
+    // Tires
+    bctx.fillStyle = '#111'; bctx.fillRect(25, 2, 10, 25); // Front tire
+    bctx.fillStyle = '#111'; bctx.fillRect(23, 95, 14, 23); // Rear tire
+    
+    // Forks
     bctx.fillStyle = '#bdc3c7'; bctx.fillRect(22, 12, 3, 15); bctx.fillRect(35, 12, 3, 15);
-    bctx.fillStyle = 'rgba(0, 200, 255, 0.6)'; bctx.beginPath(); bctx.moveTo(30, 15); bctx.lineTo(40, 35); bctx.lineTo(20, 35); bctx.fill();
-    bctx.fillStyle = '#e74c3c'; bctx.beginPath(); bctx.moveTo(30, 8); bctx.lineTo(45, 45); bctx.lineTo(35, 80); bctx.lineTo(25, 80); bctx.lineTo(15, 45); bctx.fill();
-    bctx.fillStyle = '#2c3e50'; bctx.beginPath(); bctx.moveTo(30, 25); bctx.lineTo(38, 48); bctx.lineTo(22, 48); bctx.fill();
-    bctx.fillStyle = '#1a1a1a'; bctx.roundRect(18, 50, 24, 30, 8); bctx.fill();
+    
+    // Front fairing/windshield
+    bctx.fillStyle = 'rgba(0, 200, 255, 0.4)'; bctx.beginPath(); bctx.moveTo(30, 10); bctx.lineTo(42, 35); bctx.lineTo(18, 35); bctx.fill();
+    bctx.strokeStyle = '#fff'; bctx.lineWidth = 1; bctx.stroke();
+
+    // Headlight
+    bctx.fillStyle = '#ffffcc'; bctx.beginPath(); 
+    if(bctx.ellipse) { bctx.ellipse(30, 15, 6, 3, 0, 0, Math.PI * 2); }
+    else { bctx.arc(30, 15, 6, 0, Math.PI * 2); }
+    bctx.fill();
+    bctx.shadowColor = '#ffffcc'; bctx.shadowBlur = 10; bctx.fill(); bctx.shadowBlur = 0;
+    
+    // Main bodywork
+    bctx.fillStyle = '#e74c3c'; bctx.beginPath(); bctx.moveTo(30, 8); bctx.lineTo(48, 45); bctx.lineTo(38, 85); bctx.lineTo(22, 85); bctx.lineTo(12, 45); bctx.fill();
+    
+    // Highlight lines on body
+    bctx.strokeStyle = '#ff7675'; bctx.lineWidth = 2; bctx.beginPath(); bctx.moveTo(30, 12); bctx.lineTo(44, 45); bctx.stroke();
+    
+    // Engine/Mechanics
+    bctx.fillStyle = '#2c3e50'; bctx.beginPath(); bctx.moveTo(30, 25); bctx.lineTo(40, 48); bctx.lineTo(20, 48); bctx.fill();
+    bctx.fillStyle = '#1a1a1a'; bctx.roundRect(16, 50, 28, 30, 8); bctx.fill();
+    
+    // Gas tank
+    bctx.fillStyle = '#c0392b'; bctx.beginPath(); 
+    if(bctx.ellipse) { bctx.ellipse(30, 45, 12, 15, 0, 0, Math.PI * 2); }
+    else { bctx.arc(30, 45, 12, 0, Math.PI * 2); }
+    bctx.fill();
+    
+    // Rider Helmet
     bctx.fillStyle = '#c0392b'; bctx.beginPath(); bctx.arc(30, 55, 10, 0, Math.PI * 2); bctx.fill();
     bctx.fillStyle = '#000'; bctx.beginPath(); bctx.arc(30, 53, 7, Math.PI, Math.PI * 2); bctx.fill();
-    bctx.strokeStyle = '#1a1a1a'; bctx.lineWidth = 4; bctx.beginPath(); bctx.moveTo(20, 55); bctx.lineTo(15, 40); bctx.lineTo(25, 35); bctx.moveTo(40, 55); bctx.lineTo(45, 40); bctx.lineTo(35, 35); bctx.stroke();
-    bctx.fillStyle = '#95a5a6'; bctx.fillRect(40, 80, 4, 25); bctx.fillRect(16, 80, 4, 25); 
-    bctx.fillStyle = '#111'; bctx.fillRect(23, 95, 14, 23);
-    bctx.fillStyle = '#ff0000'; bctx.fillRect(26, 95, 8, 4);
+    
+    // Rider shoulders/arms
+    bctx.strokeStyle = '#1a1a1a'; bctx.lineWidth = 5; bctx.lineCap = 'round'; bctx.beginPath(); bctx.moveTo(20, 55); bctx.lineTo(12, 40); bctx.lineTo(25, 35); bctx.moveTo(40, 55); bctx.lineTo(48, 40); bctx.lineTo(35, 35); bctx.stroke();
+    
+    // Exhausts
+    bctx.fillStyle = '#95a5a6'; bctx.fillRect(40, 80, 5, 25); bctx.fillRect(15, 80, 5, 25); 
+    
+    // Taillight
+    bctx.fillStyle = '#ff0000'; bctx.shadowColor = '#ff0000'; bctx.shadowBlur = 8;
+    bctx.fillRect(26, 95, 8, 4);
+    bctx.shadowBlur = 0;
 
     // --- Pre-render Realistic Tree Sprite ---
     const treeSprite = document.createElement('canvas');
@@ -291,114 +327,163 @@
 
     // --- Dynamic Audio System (Wind, Whooshes, and Gears) ---
     const AudioSys = {
-        ctx: null, engineOsc: null, engineGain: null, 
-        windSource: null, windFilter: null, windGain: null,
+        ctx: null, engineAudio: null,
+        bgmGain: null, padOsc1: null, padOsc2: null, 
+        currentGear: 1, gearShiftTime: 0,
+        notes: [ 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00 ],
+        step: 0, nextNoteTime: 0,
         init() {
             try {
+                if (!this.engineAudio) {
+                    this.engineAudio = new Audio('https://drive.google.com/uc?export=download&id=1clM5XbV8kwkfLZl1GGbVYUD9T31Qskd3');
+                    this.engineAudio.loop = true;
+                    this.engineAudio.preservesPitch = false;
+                    try { this.engineAudio.mozPreservesPitch = false; } catch(e){}
+                    try { this.engineAudio.webkitPreservesPitch = false; } catch(e){}
+                }
+                if (this.engineAudio.paused) {
+                    this.engineAudio.play().catch(e => console.warn(e));
+                }
+
                 if (!this.ctx) {
                     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                     
-                    this.engineOsc = this.ctx.createOscillator();
-                    this.engineOsc.type = 'sawtooth';
-                    this.engineGain = this.ctx.createGain();
-                    this.engineGain.gain.value = 0;
+                    this.bgmGain = this.ctx.createGain();
+                    this.bgmGain.gain.value = 0;
                     
-                    const engineFilter = this.ctx.createBiquadFilter();
-                    engineFilter.type = 'lowpass';
-                    engineFilter.frequency.value = 600;
-
-                    this.engineOsc.connect(engineFilter);
-                    engineFilter.connect(this.engineGain);
-                    this.engineGain.connect(this.ctx.destination);
-                    this.engineOsc.start();
+                    const bgmFilter = this.ctx.createBiquadFilter();
+                    bgmFilter.type = 'lowpass';
+                    bgmFilter.frequency.value = 800;
+                    bgmFilter.connect(this.bgmGain);
+                    this.bgmGain.connect(this.ctx.destination);
+                    this.bgmFilter = bgmFilter;
                     
-                    const bufferSize = this.ctx.sampleRate * 2;
-                    const windBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                    const data = windBuffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-                    this.windSource = this.ctx.createBufferSource();
-                    this.windSource.buffer = windBuffer;
-                    this.windSource.loop = true;
-
-                    this.windFilter = this.ctx.createBiquadFilter();
-                    this.windFilter.type = 'lowpass';
-                    this.windFilter.frequency.value = 100;
-
-                    this.windGain = this.ctx.createGain();
-                    this.windGain.gain.value = 0;
-
-                    this.windSource.connect(this.windFilter);
-                    this.windFilter.connect(this.windGain);
-                    this.windGain.connect(this.ctx.destination);
-                    this.windSource.start();
+                    this.padOsc1 = this.ctx.createOscillator();
+                    this.padOsc1.type = 'sine';
+                    this.padOsc1.frequency.value = 130.81;
+                    
+                    this.padOsc2 = this.ctx.createOscillator();
+                    this.padOsc2.type = 'triangle';
+                    this.padOsc2.frequency.value = 196.00;
+                    
+                    const padGain = this.ctx.createGain();
+                    padGain.gain.value = 0.15;
+                    this.padOsc1.connect(padGain);
+                    this.padOsc2.connect(padGain);
+                    padGain.connect(this.bgmFilter);
+                    this.padOsc1.start();
+                    this.padOsc2.start();
+                    
+                    this.nextNoteTime = this.ctx.currentTime + 0.1;
                 }
             } catch(e) { console.warn("Audio init failed", e); }
+        },
+        playArpNote() {
+            if (!this.ctx || state !== 'PLAYING') return;
+            while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                let note = this.notes[Math.floor(Math.random() * this.notes.length)];
+                if (this.step % 4 === 0) note /= 2;
+                
+                let osc = this.ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(note, this.nextNoteTime);
+                
+                let gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0, this.nextNoteTime);
+                gain.gain.linearRampToValueAtTime(0.3 * bgmVol, this.nextNoteTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.nextNoteTime + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(this.bgmFilter);
+                osc.start(this.nextNoteTime);
+                osc.stop(this.nextNoteTime + 0.35);
+                
+                this.step++;
+                this.nextNoteTime += 0.25; 
+            }
         },
         updateVolumes() {
             if (!this.ctx) return;
             try {
                 if (state === 'PLAYING') {
-                    const windLevel = (speed / maxSpeed) * 0.15;
-                    this.windGain.gain.setTargetAtTime(bgmVol * Math.max(0.05, windLevel), this.ctx.currentTime, 0.5);
-                    this.windFilter.frequency.setTargetAtTime(200 + (speed * 15), this.ctx.currentTime, 0.5);
+                    this.bgmGain.gain.setTargetAtTime(bgmVol, this.ctx.currentTime, 0.5);
                 } else if (state === 'PAUSED') {
-                    this.windGain.gain.setTargetAtTime(bgmVol * 0.02, this.ctx.currentTime, 0.5); 
+                    this.bgmGain.gain.setTargetAtTime(bgmVol * 0.2, this.ctx.currentTime, 0.5); 
                 } else {
-                    this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
+                    this.bgmGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
                 }
                 this.updateEngine(speed);
             } catch(e) {}
         },
         updateEngine(currentSpeed) {
-            if (!this.ctx) return;
+            if (!this.engineAudio) return;
             try {
                 if (state !== 'PLAYING' || sfxVol === 0) {
-                    this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+                    this.engineAudio.volume = 0;
                     return;
                 }
                 
                 let speedRange = maxSpeed - minSpeed;
                 let currentS = Math.max(0, currentSpeed - minSpeed);
+                
                 let gearSize = speedRange / 5;
-                let gear = Math.floor(currentS / gearSize);
-                if (gear > 4) gear = 4;
+                let gear = Math.floor(currentS / gearSize) + 1;
+                if (gear > 5) gear = 5;
+                
                 let rpm = (currentS % gearSize) / gearSize;
-                if (currentSpeed >= maxSpeed - 0.1) rpm = 0.9 + Math.random()*0.05;
+                if (currentSpeed >= maxSpeed - 0.1) rpm = 0.95 + Math.random()*0.05;
 
-                let freq = 60 + (gear * 15) + (rpm * 120); 
-                this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
-                // Lower intensity motor sound
-                this.engineGain.gain.setTargetAtTime(sfxVol * (0.015 + rpm * 0.015), this.ctx.currentTime, 0.1);
+                let t = performance.now() / 1000;
+                
+                if (this.engineAudio.paused) {
+                    const p = this.engineAudio.play();
+                    if (p !== undefined) p.catch(e => {});
+                }
+
+                if (gear !== this.currentGear && t - this.gearShiftTime > 0.4) {
+                    this.currentGear = gear;
+                    this.gearShiftTime = t;
+                    
+                    this.engineAudio.playbackRate = Math.max(0.5, 0.8 + (gear * 0.1));
+                    this.engineAudio.volume = Math.max(0, Math.min(1, sfxVol * 0.4));
+                } else if (t - this.gearShiftTime > 0.1) {
+                    let rate = 0.8 + (gear * 0.15) + (rpm * 1.5);
+                    if (currentSpeed > maxSpeed * 0.8) {
+                        rate += Math.sin(t * 150) * 0.05;
+                    }
+                    this.engineAudio.playbackRate = Math.min(4.0, Math.max(0.5, rate));
+                    this.engineAudio.volume = Math.max(0, Math.min(1, sfxVol * (0.4 + rpm * 0.6)));
+                }
+                
+                this.playArpNote();
             } catch(e){}
         },
         playWhoosh() { 
-            if (!this.ctx || bgmVol === 0 || state !== 'PLAYING') return;
-            try {
-                const bSize = this.ctx.sampleRate * 0.4;
-                const buffer = this.ctx.createBuffer(1, bSize, this.ctx.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
-                const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
-                
-                const filter = this.ctx.createBiquadFilter(); filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(2000, this.ctx.currentTime); filter.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.3);
-                const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0, this.ctx.currentTime);
-                // Reduced swoosh volume
-                gain.gain.linearRampToValueAtTime(bgmVol * 0.15, this.ctx.currentTime + 0.1); gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.4);
-                
-                noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); noise.start();
-            } catch(e){}
+            // Removed whoosh logic
         },
         playBlink() {
             if (!this.ctx || sfxVol === 0 || state !== 'PLAYING') return;
             try {
-                const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
-                osc.type = 'square'; osc.frequency.setValueAtTime(800, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.05);
-                gain.gain.setValueAtTime(sfxVol * 0.1, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+                const t = this.ctx.currentTime;
+                // Beep 1
+                const osc1 = this.ctx.createOscillator(); 
+                const gain1 = this.ctx.createGain();
+                osc1.type = 'sine'; 
+                osc1.frequency.setValueAtTime(2800, t);
+                gain1.gain.setValueAtTime(sfxVol * 0.015, t); 
+                gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                osc1.connect(gain1); gain1.connect(this.ctx.destination);
+                osc1.start(t); osc1.stop(t + 0.1);
+                
+                // Beep 2
+                const osc2 = this.ctx.createOscillator(); 
+                const gain2 = this.ctx.createGain();
+                osc2.type = 'sine'; 
+                osc2.frequency.setValueAtTime(2800, t + 0.15);
+                gain2.gain.setValueAtTime(sfxVol * 0.015, t + 0.15); 
+                gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                osc2.connect(gain2); gain2.connect(this.ctx.destination);
+                osc2.start(t + 0.15); osc2.stop(t + 0.25);
             } catch(e){}
         },
         playCrash() {
@@ -520,11 +605,10 @@
     }
 
     function spawnObstacle() {
-        const w = laneWidth * 0.7; const h = w * 1.8;
         let blockedLanes = [];
-        for (let i = 0; i < 5; i++) { if (!isLaneSafe(i, -h, h * 1.5)) blockedLanes.push(i); }
+        let dangerZone = laneWidth * 0.7 * 1.8 * 3.5;
+        for (let i = 0; i < 5; i++) { if (!isLaneSafe(i, -laneWidth * 0.7 * 1.8, dangerZone/2.5)) blockedLanes.push(i); }
         
-        const dangerZone = h * 3.5;
         let safeLanesExt = [0,1,2,3,4].filter(l => isLaneSafe(l, dangerZone/2, dangerZone/2));
         if (safeLanesExt.length === 1 && !blockedLanes.includes(safeLanesExt[0])) blockedLanes.push(safeLanesExt[0]);
 
@@ -534,11 +618,47 @@
         const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
         const colors = ['#f39c12', '#9b59b6', '#3498db', '#ecf0f1', '#e67e22', '#1abc9c'];
         
+        let type = 'CAR';
+        let w = laneWidth * 0.7;
+        let h = w * 1.8;
+        let speedMod = Math.random() * 0.3 + 0.5;
+        let isSwitcher = Math.random() < 0.25;
+        let color = '#3498db';
+
+        let r = Math.random();
+        if (r < 0.04) {
+            type = 'TRUCK';
+            w = laneWidth * 0.85;
+            h = w * 3.5;
+            speedMod = Math.random() * 0.1 + 0.3;
+            isSwitcher = false;
+        } else if (r < 0.07) {
+            type = 'BIKE';
+            w = laneWidth * 0.4;
+            h = w * 2.0;
+            speedMod = Math.random() * 0.4 + 0.7;
+            isSwitcher = Math.random() < 0.4;
+        } else if (r < 0.1) {
+            type = 'CYCLE';
+            w = laneWidth * 0.3;
+            h = w * 2.5;
+            speedMod = Math.random() * 0.1 + 0.2;
+            isSwitcher = false;
+        }
+
+        if (type === 'CAR' || type === 'TRUCK') {
+            color = colors[Math.floor(Math.random() * colors.length)];
+        } else if (type === 'BIKE') {
+            color = ['#e74c3c', '#2ecc71', '#f1c40f'][Math.floor(Math.random() * 3)];
+        } else {
+            color = '#bdc3c7';
+        }
+
         obstacles.push({
-            lane: lane, x: roadLeft + lane * laneWidth + (laneWidth - w) / 2, y: -h, w: w, h: h,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            speedModifier: Math.random() * 0.3 + 0.5,
-            isSwitcher: Math.random() < 0.25, 
+            type: type, lane: lane, x: roadLeft + lane * laneWidth + (laneWidth - w) / 2, y: -h, w: w, h: h,
+            color: color,
+            speedModifier: speedMod,
+            isSwitcher: isSwitcher, 
             switchState: 'IDLE', targetLane: lane, hasPassed: false
         });
     }
@@ -549,8 +669,8 @@
     function update(dt) {
         if (state !== 'PLAYING') return;
 
-        minSpeed += dt * 0.15;
-        maxSpeed += dt * 0.15;
+        minSpeed += dt * 0.45;
+        maxSpeed += dt * 0.45;
 
         if (isAccelerating) { speed += accelRate * dt; if (speed > maxSpeed) speed = maxSpeed; } 
         else { speed -= decelRate * dt; if (speed < minSpeed) speed = minSpeed; }
@@ -604,7 +724,7 @@
             obs.y += speed * obs.speedModifier * dt * 50;
             
             if (obs.y > bike.y + bike.h && !obs.hasPassed) {
-                obs.hasPassed = true; AudioSys.playWhoosh();
+                obs.hasPassed = true; 
             }
 
             if (obs.isSwitcher) {
@@ -677,8 +797,27 @@
 
         obstacles.forEach(obs => {
             ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(obs.x + 5, obs.y + 5, obs.w, obs.h);
-            ctx.fillStyle = obs.color; ctx.beginPath(); ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5); ctx.fill();
-            ctx.fillStyle = '#2c3e50'; ctx.fillRect(obs.x + 4, obs.y + obs.h*0.2, obs.w - 8, obs.h*0.2); ctx.fillRect(obs.x + 4, obs.y + obs.h*0.7, obs.w - 8, obs.h*0.15); 
+            
+            if (obs.type === 'CAR' || !obs.type) {
+                ctx.fillStyle = obs.color; ctx.beginPath(); ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5); ctx.fill();
+                ctx.fillStyle = '#2c3e50'; ctx.fillRect(obs.x + 4, obs.y + obs.h*0.2, obs.w - 8, obs.h*0.2); ctx.fillRect(obs.x + 4, obs.y + obs.h*0.7, obs.w - 8, obs.h*0.15); 
+                ctx.fillStyle = '#ff0000'; ctx.fillRect(obs.x + 4, obs.y + obs.h - 4, 8, 4); ctx.fillRect(obs.x + obs.w - 12, obs.y + obs.h - 4, 8, 4);
+            } else if (obs.type === 'TRUCK') {
+                ctx.fillStyle = obs.color; ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                ctx.fillStyle = '#ecf0f1'; ctx.fillRect(obs.x + 2, obs.y + 2, obs.w - 4, obs.h * 0.85); 
+                ctx.fillStyle = '#34495e'; ctx.fillRect(obs.x + 4, obs.y + obs.h * 0.9, obs.w - 8, obs.h * 0.08); 
+            } else if (obs.type === 'BIKE' || obs.type === 'CYCLE') {
+                ctx.fillStyle = '#111'; ctx.fillRect(obs.x + obs.w/2 - 2, obs.y, 4, obs.h*0.2); 
+                ctx.fillRect(obs.x + obs.w/2 - 3, obs.y + obs.h*0.8, 6, obs.h*0.2); 
+                ctx.fillStyle = obs.color; ctx.beginPath(); 
+                if(ctx.ellipse) { ctx.ellipse(obs.x + obs.w/2, obs.y + obs.h/2, obs.w/2, obs.h*0.4, 0, 0, Math.PI*2); }
+                else { ctx.arc(obs.x+obs.w/2, obs.y+obs.h/2, obs.w/2, 0, Math.PI*2); }
+                ctx.fill(); 
+                if(obs.type === 'BIKE') {
+                    ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(obs.x + obs.w/2, obs.y + obs.h*0.45, obs.w*0.3, 0, Math.PI*2); ctx.fill(); 
+                    ctx.fillStyle = '#ff0000'; ctx.fillRect(obs.x + obs.w/2 - 2, obs.y + obs.h - 3, 4, 3); 
+                }
+            }
             
             if (obs.switchState === 'BLINKING' && obs.blinkOn) {
                 ctx.fillStyle = '#f39c12';
