@@ -434,25 +434,25 @@
                 if (currentSpeed >= maxSpeed - 0.1) rpm = 0.95 + Math.random()*0.05;
 
                 let t = performance.now() / 1000;
-                
-                if (this.engineAudio.paused) {
-                    const p = this.engineAudio.play();
-                    if (p !== undefined) p.catch(e => {});
-                }
 
                 if (gear !== this.currentGear && t - this.gearShiftTime > 0.4) {
                     this.currentGear = gear;
                     this.gearShiftTime = t;
-                    
-                    this.engineAudio.playbackRate = Math.max(0.5, 0.8 + (gear * 0.1));
-                    this.engineAudio.volume = Math.max(0, Math.min(1, sfxVol * 0.4));
-                } else if (t - this.gearShiftTime > 0.1) {
-                    let rate = 0.8 + (gear * 0.15) + (rpm * 1.5);
-                    if (currentSpeed > maxSpeed * 0.8) {
-                        rate += Math.sin(t * 150) * 0.05;
-                    }
-                    this.engineAudio.playbackRate = Math.min(4.0, Math.max(0.5, rate));
-                    this.engineAudio.volume = Math.max(0, Math.min(1, sfxVol * (0.4 + rpm * 0.6)));
+                } 
+                
+                let rate = 0.8 + (gear * 0.15) + (rpm * 1.5);
+                if (currentSpeed > maxSpeed * 0.8) {
+                    rate += Math.sin(t * 150) * 0.05;
+                }
+                
+                let targetRate = Math.min(4.0, Math.max(0.5, rate));
+                let targetVol = Math.max(0, Math.min(1, sfxVol * (0.4 + rpm * 0.6)));
+                
+                if (Math.abs(this.engineAudio.playbackRate - targetRate) > 0.1) {
+                    this.engineAudio.playbackRate = targetRate;
+                }
+                if (Math.abs(this.engineAudio.volume - targetVol) > 0.05) {
+                    this.engineAudio.volume = targetVol;
                 }
                 
                 this.playArpNote();
@@ -531,7 +531,10 @@
         // Fallback robust permission request
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
             DeviceOrientationEvent.requestPermission().then(permissionState => {
-                if (permissionState === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                if (permissionState === 'granted') {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    window.addEventListener('devicemotion', handleMotion);
+                }
                 startGame();
             }).catch(err => {
                 console.warn(err);
@@ -539,15 +542,28 @@
             });
         } else { 
             window.addEventListener('deviceorientation', handleOrientation); 
+            window.addEventListener('devicemotion', handleMotion); 
             startGame(); 
+        }
+    }
+
+    function handleMotion(e) {
+        if (state !== 'PLAYING' || controlMode !== 'TILT') return;
+        if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null) {
+            let x = e.accelerationIncludingGravity.x || 0;
+            let tilt = x * -6; 
+            if (tilt < -30) tilt = -30; if (tilt > 30) tilt = 30;
+            if (tilt < -15) bike.lane = 0; else if (tilt < -5) bike.lane = 1; else if (tilt < 5) bike.lane = 2; else if (tilt < 15) bike.lane = 3; else bike.lane = 4;
         }
     }
 
     function handleOrientation(e) {
         if (state !== 'PLAYING' || controlMode !== 'TILT') return;
-        let tilt = e.gamma || 0;
-        if (tilt < -30) tilt = -30; if (tilt > 30) tilt = 30;
-        if (tilt < -15) bike.lane = 0; else if (tilt < -5) bike.lane = 1; else if (tilt < 5) bike.lane = 2; else if (tilt < 15) bike.lane = 3; else bike.lane = 4;
+        if (e.gamma !== null) {
+            let tilt = e.gamma || 0;
+            if (tilt < -30) tilt = -30; if (tilt > 30) tilt = 30;
+            if (tilt < -15) bike.lane = 0; else if (tilt < -5) bike.lane = 1; else if (tilt < 5) bike.lane = 2; else if (tilt < 15) bike.lane = 3; else bike.lane = 4;
+        }
     }
 
     const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right');
