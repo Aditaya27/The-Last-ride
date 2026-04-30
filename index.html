@@ -323,30 +323,77 @@
     let laneOffset = 0;
     let absoluteScroll = 0;
     
+    let isTruckBoost = false;
+    let truckBoostTimer = 0;
+    let truckObj = null;
+    let explosions = [];
+    let lastTruckScore = 0;
+    let noticeMsg = "";
+    let noticeTimer = 0;
+    
+    let speedLines = [];
+    for (let i=0; i<20; i++) {
+        speedLines.push({x: Math.random()*1000, y: Math.random()*1500, length: 20 + Math.random()*80, speed: 1000 + Math.random()*1000});
+    }
+    
     let sfxVol = 1.0; let bgmVol = 1.0;
 
     // --- Dynamic Audio System (Wind, Whooshes, and Gears) ---
     const AudioSys = {
-        ctx: null, engineAudio: null,
+        ctx: null, 
+        engineOsc1: null, engineOsc2: null, engineGain: null, engineFilter: null,
+        windSource: null, windGain: null, windFilter: null,
         bgmGain: null, padOsc1: null, padOsc2: null, 
         currentGear: 1, gearShiftTime: 0,
         notes: [ 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00 ],
         step: 0, nextNoteTime: 0,
         init() {
             try {
-                if (!this.engineAudio) {
-                    this.engineAudio = new Audio('https://drive.google.com/uc?export=download&id=1clM5XbV8kwkfLZl1GGbVYUD9T31Qskd3');
-                    this.engineAudio.loop = true;
-                    this.engineAudio.preservesPitch = false;
-                    try { this.engineAudio.mozPreservesPitch = false; } catch(e){}
-                    try { this.engineAudio.webkitPreservesPitch = false; } catch(e){}
-                }
-                if (this.engineAudio.paused) {
-                    this.engineAudio.play().catch(e => console.warn(e));
-                }
-
                 if (!this.ctx) {
                     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // --- Synthesized Engine Setup ---
+                    this.engineGain = this.ctx.createGain();
+                    this.engineGain.gain.value = 0;
+                    this.engineGain.connect(this.ctx.destination);
+                    
+                    this.engineFilter = this.ctx.createBiquadFilter();
+                    this.engineFilter.type = 'lowpass';
+                    this.engineFilter.frequency.value = 400;
+                    this.engineFilter.connect(this.engineGain);
+
+                    this.engineOsc1 = this.ctx.createOscillator();
+                    this.engineOsc1.type = 'sawtooth';
+                    this.engineOsc1.connect(this.engineFilter);
+                    this.engineOsc1.start();
+                    
+                    this.engineOsc2 = this.ctx.createOscillator();
+                    this.engineOsc2.type = 'square';
+                    this.engineOsc2.connect(this.engineFilter);
+                    this.engineOsc2.start();
+                    
+                    // --- Synthesized Wind Setup ---
+                    const windBSize = this.ctx.sampleRate * 2;
+                    const windBuffer = this.ctx.createBuffer(1, windBSize, this.ctx.sampleRate);
+                    const windData = windBuffer.getChannelData(0);
+                    for (let i = 0; i < windBSize; i++) windData[i] = Math.random() * 2 - 1;
+
+                    this.windSource = this.ctx.createBufferSource();
+                    this.windSource.buffer = windBuffer;
+                    this.windSource.loop = true;
+
+                    this.windFilter = this.ctx.createBiquadFilter();
+                    this.windFilter.type = 'lowpass';
+                    this.windFilter.frequency.value = 500;
+
+                    this.windGain = this.ctx.createGain();
+                    this.windGain.gain.value = 0;
+
+                    this.windSource.connect(this.windFilter);
+                    this.windFilter.connect(this.windGain);
+                    this.windGain.connect(this.ctx.destination);
+                    this.windSource.start();
+                    // --------------------------------
                     
                     this.bgmGain = this.ctx.createGain();
                     this.bgmGain.gain.value = 0;
@@ -416,10 +463,10 @@
             } catch(e) {}
         },
         updateEngine(currentSpeed) {
-            if (!this.engineAudio) return;
+            if (!this.engineOsc1 || !this.ctx) return;
             try {
                 if (state !== 'PLAYING' || sfxVol === 0) {
-                    this.engineAudio.volume = 0;
+                    this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
                     return;
                 }
                 
@@ -433,30 +480,44 @@
                 let rpm = (currentS % gearSize) / gearSize;
                 if (currentSpeed >= maxSpeed - 0.1) rpm = 0.95 + Math.random()*0.05;
 
+                if (isTruckBoost) {
+                    gear = 6;
+                    rpm = 1.0;
+                }
+
                 let t = performance.now() / 1000;
 
                 if (gear !== this.currentGear && t - this.gearShiftTime > 0.4) {
                     this.currentGear = gear;
                     this.gearShiftTime = t;
                 } 
-                
-                let rate = 0.8 + (gear * 0.15) + (rpm * 1.5);
-                if (currentSpeed > maxSpeed * 0.8) {
-                    rate += Math.sin(t * 150) * 0.05;
+
+                let targetFreq = 50 + (gear * 15) + (rpm * 80);
+                if (currentSpeed > maxSpeed * 0.8 || isTruckBoost) {
+                    targetFreq += Math.sin(t * 150) * 5;
                 }
+
+                let dropInShift = (t - this.gearShiftTime < 0.2) ? 0.6 : 1.0;
                 
-                let targetRate = Math.min(4.0, Math.max(0.5, rate));
-                let targetVol = Math.max(0, Math.min(1, sfxVol * (0.4 + rpm * 0.6)));
+                this.engineOsc1.frequency.setTargetAtTime(targetFreq * dropInShift, this.ctx.currentTime, 0.1);
+                this.engineOsc2.frequency.setTargetAtTime((targetFreq * dropInShift) / 2, this.ctx.currentTime, 0.1);
                 
-                if (Math.abs(this.engineAudio.playbackRate - targetRate) > 0.1) {
-                    this.engineAudio.playbackRate = targetRate;
-                }
-                if (Math.abs(this.engineAudio.volume - targetVol) > 0.05) {
-                    this.engineAudio.volume = targetVol;
+                let volMult = 0.2 + rpm * 0.3;
+                if (isTruckBoost) volMult *= 0.2;
+                this.engineGain.gain.setTargetAtTime(sfxVol * volMult, this.ctx.currentTime, 0.1);
+                this.engineFilter.frequency.setTargetAtTime(300 + (rpm * 800), this.ctx.currentTime, 0.1);
+                
+                if (this.windGain) {
+                    if (isTruckBoost) {
+                        this.windGain.gain.setTargetAtTime(sfxVol * 0.4, this.ctx.currentTime, 0.1);
+                        this.windFilter.frequency.setTargetAtTime(1000 + Math.random()*2000, this.ctx.currentTime, 0.1);
+                    } else {
+                        this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
+                    }
                 }
                 
                 this.playArpNote();
-            } catch(e){}
+            } catch(e) {}
         },
         playWhoosh() { 
             // Removed whoosh logic
@@ -547,11 +608,21 @@
         }
     }
 
+    function getOrientation() {
+        return (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    }
+
     function handleMotion(e) {
         if (state !== 'PLAYING' || controlMode !== 'TILT') return;
         if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null) {
             let x = e.accelerationIncludingGravity.x || 0;
-            let tilt = x * -6; 
+            let y = e.accelerationIncludingGravity.y || 0;
+            let angle = getOrientation();
+            let tilt = 0;
+            if (angle === 90) tilt = y * 6;
+            else if (angle === -90 || angle === 270) tilt = y * -6;
+            else tilt = x * -6;
+            
             if (tilt < -30) tilt = -30; if (tilt > 30) tilt = 30;
             if (tilt < -15) bike.lane = 0; else if (tilt < -5) bike.lane = 1; else if (tilt < 5) bike.lane = 2; else if (tilt < 15) bike.lane = 3; else bike.lane = 4;
         }
@@ -559,11 +630,19 @@
 
     function handleOrientation(e) {
         if (state !== 'PLAYING' || controlMode !== 'TILT') return;
-        if (e.gamma !== null) {
-            let tilt = e.gamma || 0;
-            if (tilt < -30) tilt = -30; if (tilt > 30) tilt = 30;
-            if (tilt < -15) bike.lane = 0; else if (tilt < -5) bike.lane = 1; else if (tilt < 5) bike.lane = 2; else if (tilt < 15) bike.lane = 3; else bike.lane = 4;
+        let tilt = 0;
+        let angle = getOrientation();
+        
+        if (angle === 90) {
+            tilt = e.beta || 0;
+        } else if (angle === -90 || angle === 270) {
+            tilt = -(e.beta || 0);
+        } else {
+            tilt = e.gamma || 0;
         }
+
+        if (tilt < -30) tilt = -30; if (tilt > 30) tilt = 30;
+        if (tilt < -15) bike.lane = 0; else if (tilt < -5) bike.lane = 1; else if (tilt < 5) bike.lane = 2; else if (tilt < 15) bike.lane = 3; else bike.lane = 4;
     }
 
     const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right');
@@ -590,7 +669,9 @@
         if (AudioSys.ctx && AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
         state = 'PLAYING'; score = 0; speed = 5; minSpeed = 5; maxSpeed = 25; isAccelerating = false;
         bike.lane = 2; bike.lean = 0; bike.vx = 0; bike.x = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
-        obstacles = []; absoluteScroll = 0; lastTime = performance.now();
+        bike.y = height * 0.70; // reset y explicitly based on resize ratio
+        obstacles = []; explosions = []; absoluteScroll = 0; lastTime = performance.now();
+        lastTruckScore = 0; isTruckBoost = false; truckBoostTimer = 0; truckObj = null; noticeTimer = 0;
         menuScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); gameOverScreen.classList.add('hidden');
         hud.classList.remove('hidden'); syncControls(controlMode); AudioSys.updateVolumes();
         requestAnimationFrame(gameLoop);
@@ -618,6 +699,29 @@
             }
         }
         return true;
+    }
+
+    function spawnTowTruck() {
+        // Find a safe lane if possible, else random
+        let lane = Math.floor(Math.random() * 5);
+        let w = laneWidth * 0.9;
+        let h = w * 3.5;
+        let speedMod = 0.8; // Moving slower relative to background, meaning it moves FASTER than normal cars
+
+        let tt = {
+            type: 'TOW_TRUCK', lane: lane, 
+            x: roadLeft + lane * laneWidth + (laneWidth - w) / 2, y: -h, w: w, h: h,
+            color: '#f39c12',
+            speedModifier: speedMod,
+            isSwitcher: false, switchState: 'IDLE', targetLane: lane, hasPassed: false
+        };
+        obstacles.push(tt);
+        noticeMsg = "CLIMB THE TRUCK!";
+        noticeTimer = 4.0;
+    }
+
+    function createExplosion(x, y) {
+        explosions.push({ x: x, y: y, radius: 0, maxRadius: 30 + Math.random()*20, alpha: 1.0 });
     }
 
     function spawnObstacle() {
@@ -685,11 +789,22 @@
     function update(dt) {
         if (state !== 'PLAYING') return;
 
-        minSpeed += dt * 0.45;
-        maxSpeed += dt * 0.45;
+        if (!isTruckBoost) {
+            minSpeed += dt * 0.18;
+            maxSpeed += dt * 0.18;
+        }
 
-        if (isAccelerating) { speed += accelRate * dt; if (speed > maxSpeed) speed = maxSpeed; } 
-        else { speed -= decelRate * dt; if (speed < minSpeed) speed = minSpeed; }
+        if (isTruckBoost) {
+            speed = minSpeed * 2.0;
+        } else {
+            if (isAccelerating) { speed += accelRate * dt; if (speed > maxSpeed) speed = maxSpeed; } 
+            else { speed -= decelRate * dt; if (speed < minSpeed) speed = minSpeed; }
+        }
+
+        if (!isTruckBoost && score - lastTruckScore >= 300) {
+            lastTruckScore = score;
+            spawnTowTruck();
+        }
 
         score += speed * dt * 2; scoreEl.innerText = Math.floor(score);
         const speedKmh = Math.floor(speed * 9); speedText.innerText = `${speedKmh} km/h`;
@@ -697,29 +812,63 @@
         
         AudioSys.updateVolumes(); 
 
-        bike.targetX = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
-        let steerDiff = bike.targetX - bike.x;
-        let spring = 50;
-        let damper = 8;
-        let ax = steerDiff * spring - (bike.vx || 0) * damper;
-        bike.vx = (bike.vx || 0) + ax * dt;
-        bike.x += bike.vx * dt;
-        bike.lean = Math.max(-35, Math.min(35, bike.vx * 0.06)); 
+        if (isTruckBoost) {
+            truckBoostTimer -= dt;
+            // truck moves strictly ahead, bike attached
+            truckObj.y = bike.y - 120; // stick around bike visually
+            
+            bike.x = truckObj.x + (truckObj.w - bike.w) / 2;
+            bike.lean = 0; 
+            bike.lane = truckObj.lane;
+
+            if (truckBoostTimer <= 0) {
+                isTruckBoost = false;
+                truckObj.speedModifier = -2.5; // zooms away fast
+                truckObj.isEscaping = true;
+                truckObj = null;
+                speed = minSpeed;
+                lastTruckScore = score;
+            }
+        } else {
+            bike.targetX = roadLeft + bike.lane * laneWidth + (laneWidth - bike.w) / 2;
+            let steerDiff = bike.targetX - bike.x;
+            let spring = 50;
+            let damper = 8;
+            let ax = steerDiff * spring - (bike.vx || 0) * damper;
+            bike.vx = (bike.vx || 0) + ax * dt;
+            bike.x += bike.vx * dt;
+            bike.lean = Math.max(-35, Math.min(35, bike.vx * 0.06)); 
+        }
 
         absoluteScroll += speed * dt * 50;
         laneOffset += speed * 0.5; if (laneOffset > 40) laneOffset = 0;
 
-        obstacleTimer += speed * dt; if (obstacleTimer > 3.5) { spawnObstacle(); obstacleTimer = 0; }
+        obstacleTimer += speed * dt; if (obstacleTimer > 7.0) { spawnObstacle(); obstacleTimer = 0; }
+
+        if (noticeTimer > 0) {
+            noticeTimer -= dt;
+        }
+
+        if (isTruckBoost || (truckObj && truckObj.isEscaping)) {
+            speedLines.forEach(line => {
+                line.y += line.speed * dt;
+                if (line.y > height) { line.y = -line.length; line.x = Math.random()*width; }
+            });
+        }
 
         // --- Anti-Phasing Traffic Manager ---
         for (let i = 0; i < obstacles.length; i++) {
             let obs = obstacles[i];
+            if (obs.type === 'TOW_TRUCK' && (isTruckBoost || obs.isEscaping)) continue;
+            
             let carAhead = null;
             let minDistance = Infinity;
 
             for (let j = 0; j < obstacles.length; j++) {
                 if (i === j) continue;
                 let other = obstacles[j];
+                if (other.type === 'TOW_TRUCK' && (isTruckBoost || other.isEscaping)) continue;
+                
                 let sameLane = (other.lane === obs.lane) || (other.targetLane === obs.lane) || (obs.targetLane === other.lane);
                 if (sameLane) {
                     if (other.y > obs.y) { 
@@ -779,11 +928,52 @@
             }
 
             let hitMargin = 5;
-            if (bike.x + hitMargin < obs.x + obs.w - hitMargin && bike.x + bike.w - hitMargin > obs.x + hitMargin &&
-                bike.y + hitMargin < obs.y + obs.h - hitMargin && bike.y + bike.h - hitMargin > obs.y + hitMargin) {
-                gameOver();
+            
+            let isTruckCollision = false;
+            let truckCollisionObj = null;
+            if (isTruckBoost && truckObj && obs !== truckObj) {
+                truckCollisionObj = truckObj;
+            } else if (obs.type !== 'TOW_TRUCK') { 
+                let escapingTruck = obstacles.find(o => o.type === 'TOW_TRUCK' && o.isEscaping);
+                if (escapingTruck && escapingTruck !== obs) {
+                    truckCollisionObj = escapingTruck;
+                }
             }
-            if (obs.y > height) obstacles.splice(i, 1);
+
+            if (truckCollisionObj) {
+                let hitMarginBoostX = -10; // Extra leniency to guarantee destruction visually
+                let hitMarginBoostY = -40; // Expand more forward to guarantee it hits and explodes nicely
+                if (truckCollisionObj.x + hitMarginBoostX < obs.x + obs.w && truckCollisionObj.x + truckCollisionObj.w - hitMarginBoostX > obs.x &&
+                    truckCollisionObj.y + hitMarginBoostY < obs.y + obs.h && truckCollisionObj.y + truckCollisionObj.h - hitMarginBoostY > obs.y) {
+                    createExplosion(obs.x + obs.w/2, obs.y + obs.h/2);
+                    obstacles.splice(i, 1);
+                    if (AudioSys.ctx) AudioSys.playCrash(); 
+                    continue; 
+                }
+            }
+
+            if (!isTruckBoost && bike.x + hitMargin < obs.x + obs.w - hitMargin && bike.x + bike.w - hitMargin > obs.x + hitMargin &&
+                bike.y + hitMargin < obs.y + obs.h - hitMargin && bike.y + bike.h - hitMargin > obs.y + hitMargin) {
+                if (obs.type === 'TOW_TRUCK') {
+                    isTruckBoost = true;
+                    truckBoostTimer = 10.0;
+                    truckObj = obs;
+                    noticeMsg = "";
+                    if (AudioSys.ctx) { AudioSys.playArpNote(); AudioSys.playCrash(); }
+                } else {
+                    gameOver();
+                }
+            }
+            if ((obs.y > height && obs !== truckObj) || obs.y < -3000) obstacles.splice(i, 1);
+        }
+
+        // --- Update Explosions ---
+        for (let i = explosions.length - 1; i >= 0; i--) {
+            let exp = explosions[i];
+            exp.radius += dt * 100;
+            exp.alpha -= dt * 2.0;
+            exp.y += speed * dt * 50; 
+            if (exp.alpha <= 0) explosions.splice(i, 1);
         }
     }
 
@@ -818,6 +1008,26 @@
                 ctx.fillStyle = obs.color; ctx.beginPath(); ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5); ctx.fill();
                 ctx.fillStyle = '#2c3e50'; ctx.fillRect(obs.x + 4, obs.y + obs.h*0.2, obs.w - 8, obs.h*0.2); ctx.fillRect(obs.x + 4, obs.y + obs.h*0.7, obs.w - 8, obs.h*0.15); 
                 ctx.fillStyle = '#ff0000'; ctx.fillRect(obs.x + 4, obs.y + obs.h - 4, 8, 4); ctx.fillRect(obs.x + obs.w - 12, obs.y + obs.h - 4, 8, 4);
+            } else if (obs.type === 'TOW_TRUCK') {
+                ctx.fillStyle = obs.color; ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                ctx.fillStyle = '#ecf0f1'; ctx.fillRect(obs.x + 2, obs.y + 2, obs.w - 4, obs.h * 0.7); 
+                ctx.fillStyle = '#34495e'; ctx.fillRect(obs.x + 4, obs.y + obs.h * 0.75, obs.w - 8, obs.h * 0.2); 
+                ctx.fillStyle = '#7f8c8d'; ctx.fillRect(obs.x + 4, obs.y + obs.h * 0.2, obs.w - 8, obs.h * 0.4); 
+                
+                if (!isTruckBoost) {
+                    // Draw bouncing arrow above it
+                    let bounce = Math.sin(performance.now() / 150) * 10;
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + obs.w/2, obs.y - 10 + bounce);
+                    ctx.lineTo(obs.x + obs.w/2 - 15, obs.y - 30 + bounce);
+                    ctx.lineTo(obs.x + obs.w/2 - 5,  obs.y - 30 + bounce);
+                    ctx.lineTo(obs.x + obs.w/2 - 5,  obs.y - 50 + bounce);
+                    ctx.lineTo(obs.x + obs.w/2 + 5,  obs.y - 50 + bounce);
+                    ctx.lineTo(obs.x + obs.w/2 + 5,  obs.y - 30 + bounce);
+                    ctx.lineTo(obs.x + obs.w/2 + 15, obs.y - 30 + bounce);
+                    ctx.fill();
+                }
             } else if (obs.type === 'TRUCK') {
                 ctx.fillStyle = obs.color; ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
                 ctx.fillStyle = '#ecf0f1'; ctx.fillRect(obs.x + 2, obs.y + 2, obs.w - 4, obs.h * 0.85); 
@@ -856,6 +1066,39 @@
             }
             ctx.restore();
         }
+        
+        if (isTruckBoost) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            speedLines.forEach(line => {
+                ctx.beginPath(); ctx.moveTo(line.x, line.y); ctx.lineTo(line.x, line.y + line.length); ctx.stroke();
+            });
+        }
+
+        explosions.forEach(exp => {
+            ctx.fillStyle = `rgba(243, 156, 18, ${exp.alpha})`;
+            ctx.beginPath();
+            ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = `rgba(231, 76, 60, ${exp.alpha * 0.8})`;
+            ctx.beginPath();
+            ctx.arc(exp.x, exp.y, exp.radius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        if (noticeTimer > 0) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0, height / 2 - 40, width, 80);
+            ctx.fillStyle = noticeTimer % 0.5 > 0.25 ? '#f1c40f' : '#e74c3c';
+            ctx.font = 'bold 36px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(noticeMsg, width / 2, height / 2);
+            ctx.restore();
+        }
+
         ctx.restore();
     }
 
